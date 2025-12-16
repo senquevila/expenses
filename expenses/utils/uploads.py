@@ -23,15 +23,15 @@ AMOUNT_CREDIT_FIELD = 3
 def process_credit_card_csv(upload: Upload):
     context = {"result": {}}
     created = 0
-    start_date = None
-    end_date = None
 
     # get default values
-    default_currency, default_account = get_defaults()
+    defaults = get_defaults()
 
     # get the upload metadata
     row_range = upload.parameters["rows"]
     indexes = get_field_indexes_credit_card(upload.parameters["cols"])
+
+    dates_set = set()
 
     for row in upload.data[row_range["start"] : row_range["end"] + 1]:
         row = [str(item).strip() for item in row]
@@ -56,6 +56,7 @@ def process_credit_card_csv(upload: Upload):
 
         try:
             payment_date, period = get_payment_date_and_period(row, indexes)
+            dates_set.add(payment_date)
         except ValueError as e:
             set_message(
                 description=str(e),
@@ -76,7 +77,7 @@ def process_credit_card_csv(upload: Upload):
 
         # get the amount and local currency
         amount, currency = get_transaction_money_credit_card(
-            row, indexes, default_currency
+            row, indexes, defaults["currency"]
         )
 
         if not amount:
@@ -98,6 +99,11 @@ def process_credit_card_csv(upload: Upload):
             set_message(**message)
             continue
 
+        if amount > 0:
+            default_account = defaults["expense_account"]
+        else:
+            default_account = defaults["income_account"]
+
         serializer = TransactionSerializer(
             data={
                 "payment_date": payment_date,
@@ -105,7 +111,7 @@ def process_credit_card_csv(upload: Upload):
                 "period": period.pk,
                 "account": default_account.pk,
                 "currency": currency.pk,
-                "amount": amount,
+                "amount": abs(amount),
                 "upload": upload.pk,
                 "identifier": row_hash,
             }
@@ -127,6 +133,8 @@ def process_credit_card_csv(upload: Upload):
     change_account_from_assoc()
 
     upload.result = json.dumps(context)
+    upload.start_date = min(dates_set) if dates_set else None
+    upload.end_date = max(dates_set) if dates_set else None
     upload.save()
     update_interval_date(upload)
 
@@ -136,7 +144,7 @@ def process_account_csv(upload: Upload, currency: Currency):
     created = 0
 
     # get default values
-    default_currency, default_account = get_defaults()
+    defaults = get_defaults()
 
     # get the upload metadata
     row_range = upload.parameters["rows"]
@@ -185,7 +193,7 @@ def process_account_csv(upload: Upload, currency: Currency):
 
         # get the amount and local currency
         amount, currency = get_transaction_money_account(
-            row, indexes, currency, default_currency
+            row, indexes, currency, defaults["currency"]
         )
 
         if not amount:
@@ -212,7 +220,7 @@ def process_account_csv(upload: Upload, currency: Currency):
                 "payment_date": payment_date,
                 "description": description,
                 "period": period.pk,
-                "account": default_account.pk,
+                "account": defaults["expense_account"].pk,
                 "currency": currency.pk,
                 "amount": amount,
                 "upload": upload.pk,
@@ -240,14 +248,24 @@ def process_account_csv(upload: Upload, currency: Currency):
     update_interval_date(upload)
 
 
-def get_defaults():
+def get_defaults() -> dict:
     default_currency = Currency.objects.filter(alpha3=settings.DEFAULT_CURRENCY).first()
     if not default_currency:
         raise ValueError("Default currency not configured")
-    default_account = Account.objects.filter(name=settings.DEFAULT_ACCOUNT).first()
-    if not default_account:
-        raise ValueError("Default account not configured")
-    return default_currency, default_account
+
+    default_expense_account = Account.objects.filter(name=settings.DEFAULT_EXPENSE_ACCOUNT).first()
+    if not default_expense_account:
+        raise ValueError("Default expense account not configured")
+
+    default_income_account = Account.objects.filter(name=settings.DEFAULT_INCOME_ACCOUNT).first()
+    if not default_income_account:
+        raise ValueError("Default income account not configured")
+
+    return {
+        "currency": default_currency,
+        "expense_account": default_expense_account,
+        "income_account": default_income_account,
+    }
 
 
 def get_field_indexes_credit_card(cols):
@@ -297,19 +315,28 @@ def get_payment_date_and_period(row, indexes):
 
 
 def get_transaction_money_credit_card(row, indexes, default_currency):
+    """
+    Take two columns for amount and return the non-zero amount with its currency.
+
+    :param row: CSV row data
+    :param indexes: Indexes for amount and amount_currency
+    :param default_currency: Default currency object
+    :return: Tuple of (amount, currency)
+    """
+
     amounts = [
         get_amount(row, indexes["amount"], default_currency),
         get_amount_currency(row, indexes["amount_currency"], default_currency),
     ]
 
-    # Filter out None values and calculate absolute values
+    # Filter out None values
     valid_amounts = [
-        (abs(amount), currency) for amount, currency in amounts if amount is not None
+        (amount, currency) for amount, currency in amounts if amount is not None or amount != 0
     ]
 
     if valid_amounts:
-        # Return the tuple with the maximum amount
-        return max(valid_amounts, key=lambda x: x[0])
+        # Return the tuple with the non-zero amount
+        return valid_amounts[0]
     else:
         return None, None
 
