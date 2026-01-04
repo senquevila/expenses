@@ -1,9 +1,3 @@
-# Django REST Framework global pagination
-DEFAULT_PAGINATION = 20
-REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': DEFAULT_PAGINATION,
-}
 """
 Django settings for expenses_backend project.
 
@@ -167,3 +161,10 @@ INTERNAL_IPS = [
 # Media configuration
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+
+# Django REST Framework global pagination
+DEFAULT_PAGINATION = 20
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": DEFAULT_PAGINATION,
+}

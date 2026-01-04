@@ -1,6 +1,3 @@
-from datetime import timedelta
-
-from django.db.models import Sum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -19,9 +16,7 @@ def create_budget_from_expenses(sender, instance, created, **kwargs):
         previous_year = year if month > 1 else year - 1
 
         try:
-            previous_period = Period.objects.get(
-                year=previous_year, month=previous_month
-            )
+            previous_period = Period.objects.get(year=previous_year, month=previous_month)
         except Period.DoesNotExist:
             return
 

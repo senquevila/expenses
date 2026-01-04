@@ -76,9 +76,7 @@ def process_credit_card_csv(upload: Upload):
             continue
 
         # get the amount and local currency
-        amount, currency = get_transaction_money_credit_card(
-            row, indexes, defaults["currency"]
-        )
+        amount, currency = get_transaction_money_credit_card(row, indexes, defaults["currency"])
 
         if not amount:
             message["description"] = "Amount zero"
@@ -192,9 +190,7 @@ def process_account_csv(upload: Upload, currency: Currency):
             continue
 
         # get the amount and local currency
-        amount, currency = get_transaction_money_account(
-            row, indexes, currency, defaults["currency"]
-        )
+        amount, currency = get_transaction_money_account(row, indexes, currency, defaults["currency"])
 
         if not amount:
             message["description"] = "Amount zero"
@@ -330,9 +326,7 @@ def get_transaction_money_credit_card(row, indexes, default_currency):
     ]
 
     # Filter out None values
-    valid_amounts = [
-        (amount, currency) for amount, currency in amounts if amount is not None or amount != 0
-    ]
+    valid_amounts = [(amount, currency) for amount, currency in amounts if amount is not None or amount != 0]
 
     if valid_amounts:
         # Return the tuple with the non-zero amount
@@ -354,9 +348,7 @@ def get_transaction_money_account(row, indexes, currency, default_currency):
         ]
 
     # Filter out None values and calculate absolute values
-    valid_amounts = [
-        (abs(amount), currency) for amount, currency in amounts if amount is not None
-    ]
+    valid_amounts = [(abs(amount), currency) for amount, currency in amounts if amount is not None]
 
     if valid_amounts:
         # Return the tuple with the maximum amount

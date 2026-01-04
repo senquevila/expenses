@@ -28,9 +28,16 @@ disabled_periods.short_description = "Disabled selected periods"
 
 @admin.register(Period)
 class PeriodAdmin(admin.ModelAdmin):
-    list_display = ("year", "month", "active",)
+    list_display = (
+        "year",
+        "month",
+        "active",
+    )
     list_filter = ("active",)
-    ordering = ["-year", "-month",]
+    ordering = [
+        "-year",
+        "-month",
+    ]
     actions = [disabled_periods]
 
 
@@ -80,9 +87,7 @@ def update_local_amount(TransactionAdmin, request, queryset):
             changes += 1
             transaction.local_amount = _new_local_amount
             transaction.save()
-    messages.success(
-        request=request, message=f"{changes} transactions updated with new local amount"
-    )
+    messages.success(request=request, message=f"{changes} transactions updated with new local amount")
 
 
 update_local_amount.short_description = "Update transactions with new local amount"
@@ -139,9 +144,7 @@ class AccountAsociationAdmin(admin.ModelAdmin):
 
 
 def remove_empty_uploads(UploadAdmin, request, queryset):
-    unused_uploads = Upload.objects.annotate(num_expenses=Count("transaction")).filter(
-        num_expenses=0
-    )
+    unused_uploads = Upload.objects.annotate(num_expenses=Count("transaction")).filter(num_expenses=0)
     deletes = unused_uploads.count()
     unused_uploads.delete()
     messages.success(request=request, message=f"Removed {deletes} uploads")
@@ -154,7 +157,7 @@ remove_empty_uploads.short_description = "Remove uploads with no transactions"
 class UploadAdmin(admin.ModelAdmin):
     list_display = ("file", "start_date", "end_date")
     actions = [remove_empty_uploads]
-    ordering = ("-created", )
+    ordering = ("-created",)
 
 
 @admin.register(ProgramTransaction)

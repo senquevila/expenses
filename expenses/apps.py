@@ -6,4 +6,4 @@ class ExpensesConfig(AppConfig):
     name = "expenses"
 
     def ready(self):
-        import expenses.signals  # Import signals module
+        import expenses.signals  # noqa: F401

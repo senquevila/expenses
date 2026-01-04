@@ -14,9 +14,7 @@ from expenses.models import (
 
 class AccountTransferForm(forms.Form):
     account_origin = forms.ModelChoiceField(queryset=Account.objects.order_by("name"))
-    account_destination = forms.ModelChoiceField(
-        queryset=Account.objects.order_by("name")
-    )
+    account_destination = forms.ModelChoiceField(queryset=Account.objects.order_by("name"))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -115,14 +113,10 @@ class UploadTransformForm(forms.ModelForm):
         ]
 
         for field in _fields[:2]:
-            self.fields[field].widget.attrs[
-                "class"
-            ] = "form-control repaint-row-trigger"
+            self.fields[field].widget.attrs["class"] = "form-control repaint-row-trigger"
 
         for field in _fields[2:]:
-            self.fields[field].widget.attrs[
-                "class"
-            ] = "form-control repaint-col-trigger"
+            self.fields[field].widget.attrs["class"] = "form-control repaint-col-trigger"
 
     class Meta:
         model = Upload
@@ -159,14 +153,10 @@ class UploadTransformAccountForm(forms.ModelForm):
         ]
 
         for field in _fields[:2]:
-            self.fields[field].widget.attrs[
-                "class"
-            ] = "form-control repaint-row-trigger"
+            self.fields[field].widget.attrs["class"] = "form-control repaint-row-trigger"
 
         for field in _fields[2:]:
-            self.fields[field].widget.attrs[
-                "class"
-            ] = "form-control repaint-col-trigger"
+            self.fields[field].widget.attrs["class"] = "form-control repaint-col-trigger"
 
     class Meta:
         model = Upload

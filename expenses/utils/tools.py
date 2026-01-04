@@ -35,9 +35,11 @@ def str_to_date(str_date) -> datetime.date:
 
 
 def get_total_local_amount(filtered) -> Decimal:
-    queryset = Transaction.objects.filter(filtered) \
-        .exclude(account__name=settings.INVALID_ACCOUNT) \
+    queryset = (
+        Transaction.objects.filter(filtered)
+        .exclude(account__name=settings.INVALID_ACCOUNT)
         .aggregate(total=Sum("local_amount"))
+    )
     return queryset["total"] or 0
 
 
@@ -73,9 +75,7 @@ def change_account_from_assoc() -> list[dict]:
 
 
 def remove_invalid_transactions() -> int:
-    invalid_expenses = Transaction.objects.filter(
-        account__name=settings.INVALID_ACCOUNT
-    )
+    invalid_expenses = Transaction.objects.filter(account__name=settings.INVALID_ACCOUNT)
     rows, _ = invalid_expenses.delete()
     return rows
 
@@ -96,9 +96,7 @@ def create_dollar_conversion() -> tuple:
             exchange = _get_exchange()
         except Exception as e:
             print(f"Error capturing exchange: {e}")
-            return {
-                "message": "Problem capturing exchange"
-            }, status.HTTP_424_FAILED_DEPENDENCY
+            return {"message": "Problem capturing exchange"}, status.HTTP_424_FAILED_DEPENDENCY
 
         currency = Currency.objects.filter(alpha3=DOLAR_CODE).first()
 

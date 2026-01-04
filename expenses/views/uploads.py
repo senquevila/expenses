@@ -27,9 +27,7 @@ class UploadListView(ListView):
         uploads = Upload.objects.order_by("-id")
         for upload in uploads:
             upload.trx_count = Transaction.objects.filter(upload=upload).count()
-            upload.line_count = (
-                upload.parameters["rows"]["end"] - upload.parameters["rows"]["start"]
-            )
+            upload.line_count = upload.parameters["rows"]["end"] - upload.parameters["rows"]["start"]
         return uploads
 
 

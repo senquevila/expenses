@@ -25,9 +25,7 @@ class Budget(models.Model):
 
 class BudgetAssignment(models.Model):
     budget = models.ForeignKey(Budget, on_delete=models.CASCADE)
-    account = models.ForeignKey(
-        "expenses.Account", blank=True, null=True, on_delete=models.CASCADE
-    )
+    account = models.ForeignKey("expenses.Account", blank=True, null=True, on_delete=models.CASCADE)
     budget_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     expense_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 

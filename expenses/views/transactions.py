@@ -120,9 +120,7 @@ class TransactionDeleteView(DeleteView):
 
 class TransactionRemoveInvalidView(APIView):
     def get(self, request):
-        invalid_expenses = Transaction.objects.filter(
-            account__name=settings.INVALID_ACCOUNT
-        )
+        invalid_expenses = Transaction.objects.filter(account__name=settings.INVALID_ACCOUNT)
         invalid_expenses.delete()
         return redirect("home")
 

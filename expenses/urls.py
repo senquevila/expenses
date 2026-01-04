@@ -109,9 +109,7 @@ urlpatterns = [
     ),
     path("loans/", views.LoanListView.as_view(), name="loan-list"),
     path("loans/add/", views.LoanCreateView.as_view(), name="loan-add"),
-    path(
-        "subscriptions/", views.SubscriptionListView.as_view(), name="subscription-list"
-    ),
+    path("subscriptions/", views.SubscriptionListView.as_view(), name="subscription-list"),
     path(
         "subscriptions/add/",
         views.SubscriptionCreateView.as_view(),

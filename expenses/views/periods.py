@@ -52,7 +52,5 @@ class PeriodOpenView(APIView):
             period.total = 0
             period.save()
         except Period.DoesNotExist:
-            messages.error(
-                request=request, message="Period is already open or not exists"
-            )
+            messages.error(request=request, message="Period is already open or not exists")
         return redirect("period-list")

@@ -10,12 +10,8 @@ class CreationModificationDateMixin(models.Model):
     que lleven esta clase.
     """
 
-    created = models.DateTimeField(
-        _("Fecha de Creación"), default=timezone_now, editable=False
-    )
-    modified = models.DateTimeField(
-        _("Fecha de última modificación"), null=True, editable=False
-    )
+    created = models.DateTimeField(_("Fecha de Creación"), default=timezone_now, editable=False)
+    modified = models.DateTimeField(_("Fecha de última modificación"), null=True, editable=False)
 
     class Meta:
         abstract = True

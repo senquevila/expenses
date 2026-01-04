@@ -8,9 +8,7 @@ class Command(BaseCommand):
     help = "Recalculate the period total"
 
     def handle(self, *args, **options):
-        for expense in Transaction.objects.values("period").annotate(
-            total=Sum("local_amount")
-        ):
+        for expense in Transaction.objects.values("period").annotate(total=Sum("local_amount")):
             period = Period.objects.get(pk=expense["period"])
             period.total = expense["total"]
             period.save()

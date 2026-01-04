@@ -1,5 +1,4 @@
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic import ListView
 from django.views.generic.edit import FormView
@@ -27,13 +26,9 @@ class AccountTransferView(FormView):
         account_destination = form.cleaned_data["account_destination"]
 
         # change expenses from account_origin to account_destination
-        Transaction.objects.filter(account=account_origin).update(
-            account=account_destination
-        )
+        Transaction.objects.filter(account=account_origin).update(account=account_destination)
 
-        AccountAsociation.objects.filter(account=account_origin).update(
-            account=account_destination
-        )
+        AccountAsociation.objects.filter(account=account_origin).update(account=account_destination)
 
         account_origin.delete()
 
