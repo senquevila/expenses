@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}
+File upload
+{% endblock %}
+
+{% block content %}
+<div class="col-md-6">
+    <h1>File upload</h1>
+    <p>The columns of the CSV file are:</p>
+    <pre class="bg-light text-dark">Payment date, description, amount(with currency), account</pre>
+    <p>The amount actually are:</p>
+    <ul>
+        <li>HNL: Lempiras (predetermined)</li>
+        <li>USD: Dollars</li>
+    </ul>
+    <hr>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3 row">
+            <label for="id_file" class="col-sm-4 col-form-label">File:</label>
+            <div class="col-sm-8">
+                {{ form.file }}
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label for="id_type" class="col-sm-4 col-form-label">Type:</label>
+            <div class="col-sm-8">
+                {{ form.file_type }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mb-3">Enviar</button>
+    </form>
+    {% if field.errors %}
+    <div class="errors">
+        {% for error in field.errors %}
+        <div class="fieldError">
+            {{ error }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

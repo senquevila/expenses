@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load humanize static %}
+
+{% block title %}
+Upload Transform
+{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+.color-bullet {
+    width: 10px;  /* Width of the square */
+    height: 10px; /* Height of the square */
+    background-color: #666; /* Default color, change as needed */
+    margin-left: 5px; /* Adds space between the label and the square */
+    vertical-align: middle; /* Aligns middle to the text in the label */
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row container">
+    <h1>Upload Transform (Credit Card)</h1>
+    <p>File upload: <code>{{ file }}</code></p>
+    <hr>
+    <div class="col-md-3">
+        <p><span id="message" style="display: none"></span></p>
+        <form id="expenseForm" method="post">
+            {% csrf_token %}
+            <div class="container">
+                <fieldset>
+                    <legend>CSV row dimension</legend>
+                    <div class="row form-group">
+                        <div class="col-md-6">
+                            <label for="{{ form.start_row.id_for_label }}" class="form-label">
+                                {{ form.start_row.label }}
+                            </label>
+                            {{ form.start_row }}
+                            <div class="form-text">{{ form.start_row.help_text }}</div>
+                            {% if form.start_row.errors %}
+                            <div class="alert alert-danger">{{ form.start_row.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.end_row.id_for_label }}" class="form-label">
+                                {{ form.end_row.label }}
+                            </label>
+                            {{ form.end_row }}
+                            <div class="form-text">{{ form.end_row.help_text }}</div>
+                            {% if form.end_row.errors %}
+                            <div class="alert alert-danger">{{ form.end_row.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </fieldset>
+                <!-- Column mapping -->
+                <fieldset class="mt-3">
+                    <legend>Column mapping</legend>
+                    <div class="row form-group">
+                        <div class="col-md-6">
+                            <label for="{{ form.payment_date.id_for_label }}" class="form-label d-inline-block">
+                                {{ form.payment_date.label }}
+                            </label>
+                            <div id="color-id_payment_date" class="color-bullet d-inline-block"></div>
+                            {{ form.payment_date }}
+                            {% if form.payment_date.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.payment_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.description.id_for_label }}" class="form-label d-inline-block">
+                                {{ form.description.label }}
+                            </label>
+                            <div id="color-id_description" class="color-bullet d-inline-block"></div>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                            <div class="alert alert-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row form-group mt-2">
+                        <div class="col-md-6">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label d-inline-block">
+                                {{ form.amount.label }}
+                            </label>
+                            <div id="color-id_amount" class="color-bullet d-inline-block"></div>
+                            {{ form.amount }} {% if form.amount.errors %}
+                            <div class="alert alert-danger">{{ form.amount.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.amount_currency.id_for_label }}" class="form-label d-inline-block">
+                                {{ form.amount_currency.label }}
+                            </label>
+                            <div id="color-id_amount_currency" class="color-bullet d-inline-block"></div>
+                            {{ form.amount_currency }}
+                            {% if form.amount_currency.errors %}
+                            <div class="alert alert-danger">{{ form.amount_currency.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </fieldset>
+                <!-- End of column mapping -->
+                <hr>
+                <div class="col-md-6 mt-3">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-9">
+        <!-- datagrid -->
+        <table id="example" class="display mt-5" style="width:100%">
+            <thead>
+                <tr>
+                    <!-- Columns will be inserted dynamically -->
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be populated by DataTables -->
+            </tbody>
+        </table>
+        <!-- end of datagrid -->
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'js/transform_upload.js' %}"></script>
+<script type="module">
+  import { run } from "{% static 'js/transform_upload_creditcard.js' %}";
+
+  const data = {{ rows|safe }};
+  const data_dimension = {{ dimension|safe }};
+
+  document.addEventListener('DOMContentLoaded', () => {
+    run(data, data_dimension);
+    });
+</script>
+{% endblock %}

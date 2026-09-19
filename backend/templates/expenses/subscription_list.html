@@ -1,0 +1,40 @@
+{% extends 'base.html' %} {% load humanize %}
+
+{% block title %}
+Subscriptions
+{%endblock %}
+
+{% block content %}
+<div class="col-md-8">
+  <h1>Subscriptions</h1>
+  <div class="card" style="width: 18rem">
+    <div class="card-body">
+      <h4 class="card-text">Total: {{ total|floatformat:"2"|intcomma }}</h4>
+    </div>
+  </div>
+  <br />
+  <p><a href="{% url 'subscription-add' %}">Add</a></p>
+  <table class="table table-striped">
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th class="text-end">Payment (month)</th>
+      <th class="text-center">Active</th>
+    </tr>
+    {% for subscription in subscriptions %}
+    <tr>
+      <td>{{ subscription.name }}</td>
+      <td>{{ subscription.subscription_type }}</td>
+      <td class="text-end">{{ subscription.currency.alpha3 }} {{ subscription.monthly_payment|floatformat:"2"|intcomma }}</td>
+      <td class="text-center">
+        {% if subscription.is_active %}
+        <i class="btn btn-success fa fa-check" aria-hidden="true"></i>
+        {% else %}
+        <i class="btn btn-danger fa fa-times" aria-hidden="true"></i>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

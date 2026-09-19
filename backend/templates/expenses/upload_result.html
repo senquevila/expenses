@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}
+Upload Result
+{% endblock %}
+
+{% block content %}
+<div class="col-md-8">
+    <h1>Expense Upload Result</h1>
+    <p>Expenses created {{ summary.created }} of {{ summary.total }}</p>
+    <p>File upload: <code>{{ upload.file }}</code></p>
+    <hr>
+    <table class="table table-striped">
+        <tr>
+            <th class="text-center">Line number</th>
+            <th>Row</th>
+            <th>Description</th>
+        </tr>
+        {% for line_number, value in result.items %}
+        <tr>
+            <td class="text-center">{{ line_number }}</td>
+            <td><pre>{{ value.source }}</pre></td>
+            <td>
+                {% if value.description == "CREATED" %}
+                <span class="badge text-bg-success rounded-pill">{{ value.description }}</span>
+                {% elif value.description == "Expense already exists" %}
+                <span class="badge text-bg-danger rounded-pill">{{ value.description }}</span>
+                {% else %}
+                <span class="badge text-bg-warning rounded-pill">{{ value.description }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

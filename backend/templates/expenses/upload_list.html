@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}
+Upload List
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .btn {
+        width: 60px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="col-md-12">
+    <h1>Uploads</h1>
+    <p><a href="{% url 'upload-add' %}">Add</a></p>
+    <table class="table table-striped">
+        <tr>
+            <th>Created</th>
+            <th>File</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Transactions</th>
+            <th>Results</th>
+        </tr>
+        {% for upload in uploads %}
+        <tr>
+            <td>{{ upload.created|date:"Y-m-d" }}</td>
+            <td>{{ upload.file.name }}</td>
+            <td>{% if upload.start_date %}{{ upload.start_date|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+            <td>{% if upload.end_date %}{{ upload.end_date|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+            <td>
+                <a href="{% url 'transaction-list' %}?upload={{ upload.id }}" class="btn btn-success">{{ upload.trx_count }}</a>
+            </td>
+            <td>
+                <a href="{% url 'upload-result' pk=upload.pk %}" class="btn btn-primary">{{ upload.line_count }}</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

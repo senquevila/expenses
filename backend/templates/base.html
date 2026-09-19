@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  {% block stylesheets %}{% endblock %}
+</head>
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-info px-5">
+    <a class="navbar-brand" href="{% url 'home' %}">Expenses App</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            Expenses
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="{% url 'account-list' %}">Accounts</a>
+            <a class="dropdown-item" href="{% url 'account-transfer' %}">Accounts transfer</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'period-list' %}">Periods</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'currency-convert-list' %}">Currency Conversions</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'transaction-list' %}">Transactions</a>
+            <a class="dropdown-item" href="{% url 'upload-list' %}">Uploads</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'subscription-list' %}">Subscriptions</a>
+            <a class="dropdown-item" href="{% url 'loan-list' %}">Loans</a>
+          </div>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            Budget
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="{% url 'budget-add' %}">Create budget</a>
+            <a class="dropdown-item" href="{% url 'budget-list' %}">List budgets</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'assignment-add' %}">Create assignment</a>
+          </div>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            Commands
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="{% url 'remove-invalid' %}">Remove invalid accounts</a>
+            <a class="dropdown-item" href="{% url 'create-dollars-convertion' %}">Update dollar conversion</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- show errors menu -->
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="container">
+    <div class="row justify-content-center">
+      {% block content %} {% endblock %}
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  {% block javascripts %}{% endblock %}
+</body>
+
+</html>

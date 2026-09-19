@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}
+Upload Inspection
+{% endblock %}
+
+{% block content %}
+<div class="col-md-12">
+    <h1>Transaction Upload Inspection</h1>
+    <p>
+        <a href="{% url 'upload-add' %}">Add</a> | <a href="{% url 'upload-list' %}">List</a>
+    </p>
+    <hr>
+    <p>File upload: <code>{{ upload.file }}</code></p>
+    <table class="table table-striped">
+        <tr>
+            <th class="text-center">Payment Date</th>
+            <th>Description</th>
+            <th class="text-end">Amount</th>
+            <th>Account</th>
+            <th>Message</th>
+        </tr>
+        {% for transaction in transactions %}
+        <tr>
+            <form class="edit-form" id="form-{{ transaction.id }}">
+                {% csrf_token %}
+                <td class="text-center">{{ transaction.payment_date }}</td>
+                <td>{{ transaction.description }}</td>
+                <td class="text-end">{{ transaction.amount|intcomma }} {{ transaction.currency.alpha3 }}</td>
+                <td>
+                    <select name="account" data-item-id="{{ transaction.id }}" onchange="submitForm(this)">
+                        {% for account in accounts %}
+                            <option value="{{ account.id }}" {% if account == transaction.account %}selected{% endif %}>
+                                {{ account.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td><span class="message-span" id="span-{{ transaction.id }}" style="display: none;"></span></td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+<script>
+    function submitForm(selectElement) {
+        const transactionId = selectElement.getAttribute('data-item-id');
+        const form = document.getElementById(`form-${transactionId}`);
+        const messageElement = document.getElementById(`span-${transactionId}`);
+        const formData = new FormData(form);
+        formData.append('transaction_id', transactionId);
+
+        fetch('{% url "upload-inspect" pk=upload.pk %}', {  // Ensure you have the correct URL here
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get("csrfmiddlewaretoken"),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageElement.textContent =  'Updated';
+                messageElement.style.display = 'inline-block';
+                messageElement.className = "badge text-bg-success"
+                setTimeout(() => {
+                    messageElement.style.display = 'none';
+                }, 1500);  // 10000 milliseconds = 10 seconds
+            } else {
+                messageElement.textContent = 'Error';
+                messageElement.style.display = 'inline-block';
+                messageElement.className = "badge text-bg-danger"
+                setTimeout(() => {
+                    messageElement.style.display = 'none';
+                }, 1500);
+            }
+        });
+    }
+</script>
+{% endblock %}

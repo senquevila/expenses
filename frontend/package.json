@@ -1,0 +1,27 @@
+{
+  "name": "expenses_frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix package",
+    "build": "npm run build --prefix package",
+    "start": "npm run start --prefix package",
+    "lint": "npm run lint --prefix package",
+    "prepare": "husky",
+    "lint-staged": "lint-staged"
+  },
+  "lint-staged": {
+    "package/**/*.{js,jsx,ts,tsx}": [
+      "npm exec prettier -- --write",
+      "npm run lint --prefix package -- --fix --max-warnings=0"
+    ],
+    "package/**/*.{json,md,css}": [
+      "npm exec prettier -- --write"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3"
+  }
+}

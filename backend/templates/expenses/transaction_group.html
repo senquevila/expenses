@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}
+Transactions
+{% endblock %}
+
+{% block content %}
+<div class="col-md-6">
+    <h1>Transactions by Account</h1>
+    <div class="card" style="width: 18rem;">
+        <div class="card-body">
+            <h2 class="card-title">{{ period }}</h2>
+            <h4 class="card-text">Local Total: {{ total|floatformat:"2"|intcomma }}</h4>
+            <p class="card-text">Last date: {{ last_trx }}</p>
+        </div>
+    </div>
+    <table class="table table-striped" style="margin-top: 10px;">
+        <tr>
+            <th>Account</th>
+            <th class="text-end">Amount</th>
+        </tr>
+        {% for group in expenses %}
+        <tr>
+            <td><a href="{% url 'transaction-list' %}?period={{ period_id }}&account={{ group.account__id }}">{{ group.account__name }}</a></td>
+            <td class="text-end {% if group.total >= 0 %}text-bg-success{% else %}text-bg-danger{% endif %}" scope="col">{{ group.total|floatformat:"2"|intcomma }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
