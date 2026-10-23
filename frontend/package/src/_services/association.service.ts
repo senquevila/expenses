@@ -1,10 +1,10 @@
 import apiClient from "@/_libs/api/client";
 import {
-  Association,
+  type Association,
   AssociationSchema,
   AssociationsListSchema,
-  CreateAssociationRequest,
-  UpdateAssociationRequest,
+  type CreateAssociationRequest,
+  type UpdateAssociationRequest,
 } from "@/_models/association.model";
 
 export const associationService = {

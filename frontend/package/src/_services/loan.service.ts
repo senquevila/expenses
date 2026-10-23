@@ -2,14 +2,14 @@ import { z } from "zod";
 import apiClient from "@/_libs/api/client";
 
 import {
-  Loan,
-  LoanSummary,
-  CreateLoanRequest,
-  UpdateLoanRequest,
-  LoansResponseSchema,
+  type CreateLoanRequest,
+  type Loan,
   LoanSchema,
+  type LoanSummary,
   LoanSummarySchema,
+  LoansResponseSchema,
   ToggleResponseSchema,
+  type UpdateLoanRequest,
 } from "@/_models/loan.model";
 
 export const loanService = {

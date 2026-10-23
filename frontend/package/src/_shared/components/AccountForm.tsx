@@ -1,9 +1,14 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Account, ACCOUNT_TYPES, CreateAccountRequest, CreateAccountRequestSchema } from "@/_models/account.model";
+import {
+  ACCOUNT_TYPES,
+  type Account,
+  type CreateAccountRequest,
+  CreateAccountRequestSchema,
+} from "@/_models/account.model";
 import { useAccountStore } from "@/_store/account.store";
 
 interface AccountFormProps {
@@ -15,13 +20,17 @@ export default function AccountForm({ onCancel, account }: AccountFormProps) {
   const { accounts, add, edit, remove } = useAccountStore();
   const parentOptions = accounts.filter((a) => a.id !== account?.id);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateAccountRequest>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateAccountRequest>({
     resolver: zodResolver(CreateAccountRequestSchema),
     defaultValues: account
       ? {
           name: account.name,
           sign: account.sign,
-          account_type: account.account_type as typeof ACCOUNT_TYPES[number],
+          account_type: account.account_type as (typeof ACCOUNT_TYPES)[number],
           parent: account.parent?.id ?? null,
         }
       : {
@@ -43,46 +52,84 @@ export default function AccountForm({ onCancel, account }: AccountFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Name
+        </label>
         <input
+          id="name"
           type="text"
           {...register("name")}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
         />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+        )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Account Type</label>
+        <label
+          htmlFor="account_type"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Account Type
+        </label>
         <select
+          id="account_type"
           {...register("account_type")}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >
           {ACCOUNT_TYPES.map((type) => (
-            <option key={type} value={type}>{type}</option>
+            <option key={type} value={type}>
+              {type}
+            </option>
           ))}
         </select>
-        {errors.account_type && <p className="text-red-500 text-sm mt-1">{errors.account_type.message}</p>}
+        {errors.account_type && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.account_type.message}
+          </p>
+        )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Sign</label>
+        <label
+          htmlFor="sign"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Sign
+        </label>
         <select
+          id="sign"
           {...register("sign", { valueAsNumber: true })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >
           <option value={1}>Positive (+)</option>
           <option value={-1}>Negative (−)</option>
         </select>
-        {errors.sign && <p className="text-red-500 text-sm mt-1">{errors.sign.message}</p>}
+        {errors.sign && (
+          <p className="text-red-500 text-sm mt-1">{errors.sign.message}</p>
+        )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Parent Account</label>
+        <label
+          htmlFor="parent"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Parent Account
+        </label>
         <select
-          {...register("parent", { setValueAs: (v) => (v === "" ? null : Number(v)) })}
+          id="parent"
+          {...register("parent", {
+            setValueAs: (v) => (v === "" ? null : Number(v)),
+          })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >
           <option value="">None</option>
           {parentOptions.map((a) => (
-            <option key={a.id} value={a.id}>{a.name}</option>
+            <option key={a.id} value={a.id}>
+              {a.name}
+            </option>
           ))}
         </select>
       </div>

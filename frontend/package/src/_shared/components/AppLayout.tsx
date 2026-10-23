@@ -1,18 +1,18 @@
 "use client";
 
+import {
+  ArrowLeftRight,
+  Calendar,
+  CreditCard,
+  LayoutDashboard,
+  Link2,
+  RotateCcw,
+  Settings as SettingsIcon,
+  Upload,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Calendar,
-  Wallet,
-  ArrowLeftRight,
-  Upload,
-  CreditCard,
-  RotateCcw,
-  Link2,
-  Settings as SettingsIcon,
-} from "lucide-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

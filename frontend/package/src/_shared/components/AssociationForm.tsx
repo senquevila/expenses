@@ -1,15 +1,15 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Plus, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Association,
-  CreateAssociationRequest,
+  type Association,
+  type CreateAssociationRequest,
   CreateAssociationRequestSchema,
 } from "@/_models/association.model";
-import { useAssociationStore } from "@/_store/association.store";
 import { useAccountStore } from "@/_store/account.store";
+import { useAssociationStore } from "@/_store/association.store";
 
 interface AssociationFormProps {
   onCancel?: () => void;
@@ -46,10 +46,14 @@ export default function AssociationForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="account"
+          className="block text-sm font-medium text-gray-700"
+        >
           Account
         </label>
         <select
+          id="account"
           {...register("account", { valueAsNumber: true })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
           disabled={accounts.length === 0}
@@ -66,8 +70,14 @@ export default function AssociationForm({
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Token</label>
+        <label
+          htmlFor="token"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Token
+        </label>
         <input
+          id="token"
           type="text"
           {...register("token")}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"

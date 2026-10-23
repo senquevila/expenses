@@ -1,16 +1,16 @@
 "use client";
 
-import { Pencil, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLoanStore } from "@/_store/loan.store";
-import { Loan } from "@/_models/loan.model";
+import type { Loan } from "@/_models/loan.model";
 import LoanForm from "@/_shared/components/LoanForm";
 import Money from "@/_shared/components/Money";
+import { useLoanStore } from "@/_store/loan.store";
 
 function loanProgress(startDate: string, months: number): number {
   const start = new Date(startDate);
-  if (isNaN(start.getTime())) {
+  if (Number.isNaN(start.getTime())) {
     return 0;
   }
 
@@ -58,7 +58,10 @@ export function Loans() {
         <h1 className="text-3xl font-bold">Loans</h1>
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger asChild>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            >
               <Plus className="size-5" />
               Add Loan
             </button>
@@ -133,6 +136,7 @@ export function Loans() {
 
       <div className="mb-6 flex gap-2">
         <button
+          type="button"
           onClick={() => {
             setFilter("all");
             fetchAll();
@@ -146,6 +150,7 @@ export function Loans() {
           All Loans
         </button>
         <button
+          type="button"
           onClick={() => {
             setFilter("active");
             fetchAll(true);
@@ -197,6 +202,7 @@ export function Loans() {
                   className="text-2xl"
                 />
                 <button
+                  type="button"
                   onClick={() => setEditingLoan(loan)}
                   className="p-1.5 rounded hover:bg-zinc-100 transition-colors"
                   aria-label="Edit loan"
@@ -240,6 +246,7 @@ export function Loans() {
             <div className="pt-4 border-t border-zinc-100">
               {loan.is_active ? (
                 <button
+                  type="button"
                   onClick={() => toggle(loan.id)}
                   className="px-4 py-2 bg-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-300 transition-colors text-sm"
                 >
@@ -247,6 +254,7 @@ export function Loans() {
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={() => toggle(loan.id)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                 >

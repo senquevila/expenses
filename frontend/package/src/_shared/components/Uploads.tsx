@@ -1,15 +1,9 @@
 "use client";
 
-import { Check, ChevronsUpDown, List, Plus, Trash2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import React, { useEffect, useState } from "react";
-import { useUploadStore } from "@/_store/upload.store";
-import { Upload, UPLOAD_TYPES } from "@/_models/upload.model";
-import UploadForm from "@/_shared/components/UploadForm";
-import UploadStepProcess from "@/_shared/components/upload/UploadStepProcess";
-import Pagination from "@/_shared/components/Pagination";
-import { uploadService } from "@/_services/upload.service";
-import { Popover, PopoverContent, PopoverTrigger } from "@/_libs/ui/popover";
+import { Check, ChevronsUpDown, List, Plus, Trash2 } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -18,6 +12,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/_libs/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/_libs/ui/popover";
+import { UPLOAD_TYPES, type Upload } from "@/_models/upload.model";
+import { uploadService } from "@/_services/upload.service";
+import Pagination from "@/_shared/components/Pagination";
+import UploadForm from "@/_shared/components/UploadForm";
+import UploadStepProcess from "@/_shared/components/upload/UploadStepProcess";
+import { useUploadStore } from "@/_store/upload.store";
 
 function fileName(url: string | null): string {
   if (!url) return "—";
@@ -110,7 +111,10 @@ export default function Uploads() {
           }}
         >
           <Dialog.Trigger asChild>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            >
               <Plus className="size-5" />
               New Upload
             </button>
@@ -130,7 +134,10 @@ export default function Uploads() {
       <div className="flex items-center gap-3 mb-4">
         <Popover open={identifierOpen} onOpenChange={setIdentifierOpen}>
           <PopoverTrigger asChild>
-            <button className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm bg-white hover:bg-zinc-50 min-w-[180px] justify-between">
+            <button
+              type="button"
+              className="flex items-center gap-2 px-3 py-2 border rounded-lg text-sm bg-white hover:bg-zinc-50 min-w-[180px] justify-between"
+            >
               <span
                 className={
                   filters.identifier ? "text-zinc-900" : "text-zinc-400"
@@ -196,6 +203,7 @@ export default function Uploads() {
 
         {(filters.identifier || filters.upload_type) && (
           <button
+            type="button"
             onClick={() => setFilters({})}
             className="text-sm text-zinc-400 hover:text-zinc-700 transition-colors"
           >
@@ -257,12 +265,14 @@ export default function Uploads() {
                     <div className="flex items-center justify-end gap-2">
                       <span className="text-sm text-zinc-500">Delete?</span>
                       <button
+                        type="button"
                         onClick={() => handleDelete(upload)}
                         className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                       >
                         Yes
                       </button>
                       <button
+                        type="button"
                         onClick={() => setConfirmId(null)}
                         className="px-2 py-1 text-sm bg-zinc-200 text-zinc-700 rounded hover:bg-zinc-300 transition-colors"
                       >
@@ -273,6 +283,7 @@ export default function Uploads() {
                     <div className="flex items-center justify-end gap-1">
                       {upload.upload_status === "DONE" && (
                         <button
+                          type="button"
                           onClick={() => setSelectedUpload(upload)}
                           className="p-2 text-zinc-400 hover:text-zinc-700 transition-colors rounded"
                           title="View transactions"
@@ -281,6 +292,7 @@ export default function Uploads() {
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => setConfirmId(upload.id)}
                         className="p-2 text-zinc-400 hover:text-red-600 transition-colors rounded"
                         title="Delete upload"

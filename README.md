@@ -81,7 +81,8 @@ src/
 | `npm run dev` | Start dev server on port 4200 |
 | `npm run build` | Build for production |
 | `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+| `npm run lint` | Run Biome lint and format checks |
+| `npm run format` | Apply Biome formatting and safe fixes |
 
 ## Contributing
 

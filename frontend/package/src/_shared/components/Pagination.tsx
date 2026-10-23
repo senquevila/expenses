@@ -46,6 +46,7 @@ export default function Pagination({
       )}
       <div className="flex items-center gap-1">
         <button
+          type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1 || loading}
           className="p-2 rounded border border-zinc-200 text-zinc-600 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -63,6 +64,7 @@ export default function Pagination({
             </span>
           ) : (
             <button
+              type="button"
               key={item}
               onClick={() => onPageChange(item)}
               disabled={loading}
@@ -77,6 +79,7 @@ export default function Pagination({
           ),
         )}
         <button
+          type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages || loading}
           className="p-2 rounded border border-zinc-200 text-zinc-600 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

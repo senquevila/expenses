@@ -1,8 +1,8 @@
-import { create } from "zustand";
-import { toast } from "sonner";
 import axios from "axios";
+import { toast } from "sonner";
 import { ZodError } from "zod";
-import { Upload, CreateUploadRequest } from "@/_models/upload.model";
+import { create } from "zustand";
+import type { CreateUploadRequest, Upload } from "@/_models/upload.model";
 import { uploadService } from "@/_services/upload.service";
 
 function getUploadErrorMessage(

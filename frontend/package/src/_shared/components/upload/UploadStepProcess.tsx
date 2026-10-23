@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccountStore } from "@/_store/account.store";
+import type { Transaction } from "@/_models/transaction.model";
 import { transactionService } from "@/_services/transaction.service";
-import { Transaction } from "@/_models/transaction.model";
+import { useAccountStore } from "@/_store/account.store";
 
 interface UploadStepProcessProps {
   uploadId: number;

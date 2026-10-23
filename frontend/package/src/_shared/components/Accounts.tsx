@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, ArrowLeftRight, Pencil } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useAccountStore } from "@/_store/account.store";
-import { Account } from "@/_models/account.model";
+import { ArrowLeftRight, Pencil, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { Account } from "@/_models/account.model";
 import AccountForm from "@/_shared/components/AccountForm";
 import TransferForm from "@/_shared/components/TransferForm";
+import { useAccountStore } from "@/_store/account.store";
 
 export function Accounts() {
   const { accounts, loading, fetchAll } = useAccountStore();
@@ -25,7 +25,10 @@ export function Accounts() {
         <div className="flex gap-3">
           <Dialog.Root open={transferOpen} onOpenChange={setTransferOpen}>
             <Dialog.Trigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors"
+              >
                 <ArrowLeftRight className="size-5" />
                 Transfer
               </button>
@@ -45,7 +48,10 @@ export function Accounts() {
           </Dialog.Root>
           <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
             <Dialog.Trigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+              >
                 <Plus className="size-5" />
                 Create Account
               </button>
@@ -116,6 +122,7 @@ export function Accounts() {
                             {account.name}
                           </h3>
                           <button
+                            type="button"
                             onClick={() => setEditingAccount(account)}
                             className="p-1 rounded hover:bg-zinc-100 transition-colors"
                             aria-label="Edit account"

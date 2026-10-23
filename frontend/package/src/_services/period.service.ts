@@ -1,12 +1,12 @@
 import apiClient from "@/_libs/api/client";
 import {
-  Period,
-  CreatePeriodRequest,
-  UpdatePeriodRequest,
-  PeriodsResponseSchema,
+  type CreatePeriodRequest,
+  type Period,
   PeriodSchema,
-  PeriodSummary,
+  type PeriodSummary,
   PeriodSummarySchema,
+  PeriodsResponseSchema,
+  type UpdatePeriodRequest,
 } from "@/_models/period.model";
 
 export const periodService = {

@@ -1,8 +1,8 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeftRight } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAccountStore } from "@/_store/account.store";
 
@@ -46,10 +46,14 @@ export default function TransferForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="source_account_id"
+          className="block text-sm font-medium text-gray-700"
+        >
           Source Account
         </label>
         <select
+          id="source_account_id"
           {...register("source_account_id", { valueAsNumber: true })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >
@@ -67,10 +71,14 @@ export default function TransferForm({
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="target_account_id"
+          className="block text-sm font-medium text-gray-700"
+        >
           Target Account
         </label>
         <select
+          id="target_account_id"
           {...register("target_account_id", { valueAsNumber: true })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >

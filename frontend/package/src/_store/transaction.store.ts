@@ -1,12 +1,12 @@
-import { create } from "zustand";
 import { toast } from "sonner";
-import {
-  Transaction,
+import { create } from "zustand";
+import { parseApiError } from "@/_libs/api/error";
+import type {
   CreateTransactionRequest,
+  Transaction,
   UpdateTransactionRequest,
 } from "@/_models/transaction.model";
 import { transactionService } from "@/_services/transaction.service";
-import { parseApiError } from "@/_libs/api/error";
 
 type FetchParams = {
   year?: number;

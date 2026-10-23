@@ -1,6 +1,6 @@
 "use client";
 
-import { Money as MoneyValue } from "@/_models/money.model";
+import type { Money as MoneyValue } from "@/_models/money.model";
 
 interface MoneyProps {
   value: MoneyValue | number;

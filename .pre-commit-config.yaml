@@ -1,0 +1,17 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+  - repo: local
+    hooks:
+      - id: biome
+        name: biome check
+        # ponytail: uses the project's biome so hook and `npm run lint` match; needs `npm install` in frontend/package
+        entry: bash -c 'cd frontend/package && node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true "${@#frontend/package/}"' --
+        language: system
+        files: ^frontend/package/

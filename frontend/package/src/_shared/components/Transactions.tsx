@@ -1,13 +1,13 @@
 "use client";
 
-import { Pencil, Plus, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Pencil, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTransactionStore } from "@/_store/transaction.store";
-import { Transaction } from "@/_models/transaction.model";
-import TransactionForm from "@/_shared/components/TransactionForm";
+import type { Transaction } from "@/_models/transaction.model";
 import Money from "@/_shared/components/Money";
 import Pagination from "@/_shared/components/Pagination";
+import TransactionForm from "@/_shared/components/TransactionForm";
+import { useTransactionStore } from "@/_store/transaction.store";
 
 const MONTH_NAMES = [
   "Jan",
@@ -98,9 +98,9 @@ export default function Transactions({
     description: debouncedSearch || undefined,
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filterParams is rebuilt every render; depend on its inputs instead
   useEffect(() => {
     fetchAll(filterParams);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     fetchAll,
     activePeriod,
@@ -169,7 +169,10 @@ export default function Transactions({
           )}
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+              >
                 <Plus className="size-5" />
                 Add Transaction
               </button>
@@ -229,6 +232,7 @@ export default function Transactions({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button
+                    type="button"
                     onClick={() => setEditingTransaction(transaction)}
                     className="p-1.5 rounded hover:bg-zinc-100 transition-colors"
                     aria-label="Edit transaction"

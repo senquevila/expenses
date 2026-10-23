@@ -26,7 +26,7 @@ apiClient.interceptors.response.use(
       // redirect to login or clear session
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

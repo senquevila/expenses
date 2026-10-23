@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { AppLayout } from "@/_shared/components/AppLayout";
 import { Toaster } from "@/_libs/ui/sonner";
+import { AppLayout } from "@/_shared/components/AppLayout";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {

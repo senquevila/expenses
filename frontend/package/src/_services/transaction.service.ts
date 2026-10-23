@@ -1,12 +1,12 @@
 import apiClient from "@/_libs/api/client";
 
 import {
-  Transaction,
-  TransactionsResponse,
-  CreateTransactionRequest,
-  UpdateTransactionRequest,
-  TransactionsResponseSchema,
+  type CreateTransactionRequest,
+  type Transaction,
   TransactionSchema,
+  type TransactionsResponse,
+  TransactionsResponseSchema,
+  type UpdateTransactionRequest,
 } from "@/_models/transaction.model";
 
 export const transactionService = {

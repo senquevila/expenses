@@ -24,9 +24,15 @@ export default function UploadStepUpload({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
-        <label className="text-sm font-medium text-zinc-700">Identifier:</label>
+        <label
+          htmlFor="identifier"
+          className="text-sm font-medium text-zinc-700"
+        >
+          Identifier:
+        </label>
         <div>
           <input
+            id="identifier"
             list="identifier-options"
             value={identifier}
             onChange={(e) => onIdentifierChange(e.target.value)}
@@ -43,9 +49,12 @@ export default function UploadStepUpload({
       </div>
 
       <div className="grid grid-cols-[6rem_1fr] items-center gap-3">
-        <label className="text-sm font-medium text-zinc-700">File:</label>
+        <label htmlFor="file" className="text-sm font-medium text-zinc-700">
+          File:
+        </label>
         <div>
           <input
+            id="file"
             ref={fileInputRef}
             type="file"
             accept=".csv"

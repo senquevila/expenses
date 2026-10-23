@@ -1,10 +1,10 @@
 import apiClient from "@/_libs/api/client";
 import {
-  Account,
+  type Account,
   AccountSchema,
   AccountsResponseSchema,
-  CreateAccountRequest,
-  UpdateAccountRequest,
+  type CreateAccountRequest,
+  type UpdateAccountRequest,
 } from "@/_models/account.model";
 
 export const accountService = {

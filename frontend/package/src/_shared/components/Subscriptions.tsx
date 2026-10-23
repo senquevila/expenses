@@ -1,12 +1,12 @@
 "use client";
 
-import { Pencil, Plus } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSubscriptionStore } from "@/_store/subscription.store";
-import { Subscription } from "@/_models/subscription.model";
-import SubscriptionForm from "@/_shared/components/SubscriptionForm";
+import type { Subscription } from "@/_models/subscription.model";
 import Money from "@/_shared/components/Money";
+import SubscriptionForm from "@/_shared/components/SubscriptionForm";
+import { useSubscriptionStore } from "@/_store/subscription.store";
 
 export function Subscriptions() {
   const [filter, setFilter] = useState<"all" | "active">("active");
@@ -39,7 +39,10 @@ export function Subscriptions() {
         <h1 className="text-3xl font-bold">Subscriptions</h1>
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger asChild>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            >
               <Plus className="size-5" />
               Add Subscription
             </button>
@@ -94,6 +97,7 @@ export function Subscriptions() {
 
       <div className="mb-6 flex gap-2">
         <button
+          type="button"
           onClick={() => {
             setFilter("all");
             fetchAll();
@@ -107,6 +111,7 @@ export function Subscriptions() {
           All Subscriptions
         </button>
         <button
+          type="button"
           onClick={() => {
             setFilter("active");
             fetchAll(true);
@@ -163,6 +168,7 @@ export function Subscriptions() {
                   <p className="text-sm text-zinc-500">/ month</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setEditingSubscription(subscription)}
                   className="p-1.5 rounded hover:bg-zinc-100 transition-colors"
                   aria-label="Edit subscription"
@@ -174,6 +180,7 @@ export function Subscriptions() {
             <div className="pt-3 border-t border-zinc-100">
               {subscription.is_active ? (
                 <button
+                  type="button"
                   onClick={() => toggle(subscription.id)}
                   className="px-4 py-2 bg-zinc-200 text-zinc-700 rounded-lg hover:bg-zinc-300 transition-colors text-sm"
                 >
@@ -181,6 +188,7 @@ export function Subscriptions() {
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={() => toggle(subscription.id)}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                 >

@@ -1,9 +1,9 @@
 import apiClient from "@/_libs/api/client";
 import {
-  Upload,
-  Step1Upload,
+  type CreateUploadRequest,
+  type Step1Upload,
   Step1UploadSchema,
-  CreateUploadRequest,
+  type Upload,
   UploadSchema,
 } from "@/_models/upload.model";
 

@@ -1,6 +1,6 @@
-import { create } from "zustand";
 import { toast } from "sonner";
-import {
+import { create } from "zustand";
+import type {
   Association,
   CreateAssociationRequest,
   UpdateAssociationRequest,

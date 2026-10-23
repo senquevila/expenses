@@ -1,15 +1,15 @@
 "use client";
 
-import { Plus, List, ArrowRight } from "lucide-react";
-import * as Switch from "@radix-ui/react-switch";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useState } from "react";
+import * as Switch from "@radix-ui/react-switch";
+import { ArrowRight, List, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { usePeriodStore } from "@/_store/period.store";
+import { useEffect, useState } from "react";
+import type { Period, PeriodSummaryItem } from "@/_models/period.model";
 import { periodService } from "@/_services/period.service";
-import { Period, PeriodSummaryItem } from "@/_models/period.model";
-import PeriodForm from "@/_shared/components/PeriodForm";
 import Money from "@/_shared/components/Money";
+import PeriodForm from "@/_shared/components/PeriodForm";
+import { usePeriodStore } from "@/_store/period.store";
 
 export default function Periods() {
   const { periods, fetchAll, loading, toggle } = usePeriodStore();
@@ -41,7 +41,10 @@ export default function Periods() {
         <h1 className="text-3xl font-bold">Periods</h1>
         <Dialog.Root open={open} onOpenChange={setOpen}>
           <Dialog.Trigger asChild>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+            <button
+              type="button"
+              className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+            >
               <Plus className="size-5" />
               Create Period
             </button>
@@ -78,6 +81,7 @@ export default function Periods() {
                 </td>
                 <td className="px-6 py-4 text-center">
                   <button
+                    type="button"
                     onClick={() => openSummary(period)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-zinc-600 border border-zinc-200 rounded-md hover:bg-zinc-50 transition-colors"
                     title="View transactions summary"
@@ -138,6 +142,7 @@ export default function Periods() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
+                            type="button"
                             onClick={() =>
                               router.push(
                                 `/transactions?period=${summaryPeriod?.id}&account=${item.account_id}`,

@@ -1,7 +1,7 @@
-import {
+import type {
+  CreateSubscriptionRequest,
   Subscription,
   SubscriptionSummary,
-  CreateSubscriptionRequest,
   UpdateSubscriptionRequest,
 } from "@/_models/subscription.model";
 import { subscriptionService } from "@/_services/subscription.service";

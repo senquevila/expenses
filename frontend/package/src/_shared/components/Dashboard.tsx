@@ -1,39 +1,39 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   ChevronLeft,
   ChevronRight,
-  TrendingDown,
-  TrendingUp,
   Minus,
   RefreshCw,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  CartesianGrid,
-  Legend,
 } from "recharts";
-import * as Dialog from "@radix-ui/react-dialog";
-import Money from "@/_shared/components/Money";
+import type { Account } from "@/_models/account.model";
+import type { Period, PeriodSummaryItem } from "@/_models/period.model";
+import type { Transaction } from "@/_models/transaction.model";
+import type { Upload } from "@/_models/upload.model";
+import { accountService } from "@/_services/account.service";
 import { periodService } from "@/_services/period.service";
 import { transactionService } from "@/_services/transaction.service";
-import { accountService } from "@/_services/account.service";
 import { uploadService } from "@/_services/upload.service";
-import { Period, PeriodSummaryItem } from "@/_models/period.model";
-import { Account } from "@/_models/account.model";
-import { Transaction } from "@/_models/transaction.model";
-import { Upload } from "@/_models/upload.model";
+import Money from "@/_shared/components/Money";
 
 const MONTH_NAMES = [
   "January",
@@ -111,8 +111,9 @@ function computeMissingGaps(
     const end = parseLocalDate(u.end_date);
     if (end.getFullYear() < year || start.getFullYear() > year) continue;
     if (u.identifier) {
-      if (!byId.has(u.identifier)) byId.set(u.identifier, []);
-      byId.get(u.identifier)!.push({ start, end });
+      const list = byId.get(u.identifier) ?? [];
+      list.push({ start, end });
+      byId.set(u.identifier, list);
     } else {
       anonymous.push({ start, end });
     }
@@ -127,10 +128,11 @@ function computeMissingGaps(
     // Merge overlapping ranges
     const merged: { start: Date; end: Date }[] = [];
     for (const r of allRanges) {
-      if (merged.length === 0 || r.start > merged.at(-1)!.end) {
+      const last = merged.at(-1);
+      if (!last || r.start > last.end) {
         merged.push({ ...r });
-      } else if (r.end > merged.at(-1)!.end) {
-        merged.at(-1)!.end = r.end;
+      } else if (r.end > last.end) {
+        last.end = r.end;
       }
     }
 
@@ -153,7 +155,7 @@ function computeMissingGaps(
     }
 
     // Gap from last upload to today
-    const lastEnd = merged.at(-1)!.end;
+    const lastEnd = merged[merged.length - 1].end;
     const daysSinceLast = Math.round(
       (now.getTime() - lastEnd.getTime()) / 86400000,
     );
@@ -224,7 +226,7 @@ export function Dashboard() {
       );
       setPeriods(sorted);
       const activeIdx = sorted.findIndex((p) => p.active);
-      setIdx(activeIdx >= 0 ? activeIdx : 0);
+      setIdx(Math.max(activeIdx, 0));
     });
   }, []);
 
@@ -426,7 +428,10 @@ export function Dashboard() {
           {uploadGaps.length > 0 && (
             <Dialog.Root>
               <Dialog.Trigger asChild>
-                <button className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors"
+                >
                   {uploadGaps.length} missing upload
                   {uploadGaps.length > 1 ? "s" : ""}
                 </button>
@@ -439,6 +444,7 @@ export function Dashboard() {
                       Missing Uploads — {new Date().getFullYear()}
                     </Dialog.Title>
                     <button
+                      type="button"
                       onClick={refreshUploads}
                       disabled={uploadsRefreshing}
                       className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-40 transition-colors"
@@ -481,6 +487,7 @@ export function Dashboard() {
         {period && (
           <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm px-2 py-1.5">
             <button
+              type="button"
               onClick={() => setIdx((i) => Math.min(i + 1, periods.length - 1))}
               disabled={idx >= periods.length - 1}
               className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -496,6 +503,7 @@ export function Dashboard() {
               )}
             </span>
             <button
+              type="button"
               onClick={() => setIdx((i) => Math.max(i - 1, 0))}
               disabled={idx === 0}
               className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"

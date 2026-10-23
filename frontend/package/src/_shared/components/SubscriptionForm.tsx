@@ -1,11 +1,15 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { CreateSubscriptionRequestSchema, Subscription, SUBSCRIPTION_TYPES } from "@/_models/subscription.model";
-import { Currency } from "@/_models/currency.model";
+import type { Currency } from "@/_models/currency.model";
+import {
+  CreateSubscriptionRequestSchema,
+  SUBSCRIPTION_TYPES,
+  type Subscription,
+} from "@/_models/subscription.model";
 import { currencyService } from "@/_services/currency.service";
 import { useSubscriptionStore } from "@/_store/subscription.store";
 
@@ -14,15 +18,24 @@ interface SubscriptionFormProps {
   subscription?: Subscription;
 }
 
-type FormValues = import("@/_models/subscription.model").CreateSubscriptionRequest;
+type FormValues =
+  import("@/_models/subscription.model").CreateSubscriptionRequest;
 
-export default function SubscriptionForm({ onCancel, subscription }: SubscriptionFormProps) {
+export default function SubscriptionForm({
+  onCancel,
+  subscription,
+}: SubscriptionFormProps) {
   const add = useSubscriptionStore((s) => s.add);
   const edit = useSubscriptionStore((s) => s.edit);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loadingCurrencies, setLoadingCurrencies] = useState(true);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(CreateSubscriptionRequestSchema),
     defaultValues: subscription
       ? {
@@ -61,7 +74,9 @@ export default function SubscriptionForm({ onCancel, subscription }: Subscriptio
     };
 
     loadCurrencies();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [setValue, subscription]);
 
   const onSubmit = async (data: FormValues) => {
@@ -80,51 +95,118 @@ export default function SubscriptionForm({ onCancel, subscription }: Subscriptio
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700">Name</label>
-        <input type="text" {...register("name")} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Name
+        </label>
+        <input
+          id="name"
+          type="text"
+          {...register("name")}
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+        />
+        {errors.name && (
+          <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+        )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Type</label>
+        <label
+          htmlFor="subscription_type"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Type
+        </label>
         <select
+          id="subscription_type"
           {...register("subscription_type")}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
         >
           {SUBSCRIPTION_TYPES.map((type) => (
-            <option key={type} value={type}>{type.charAt(0) + type.slice(1).toLowerCase()}</option>
+            <option key={type} value={type}>
+              {type.charAt(0) + type.slice(1).toLowerCase()}
+            </option>
           ))}
         </select>
-        {errors.subscription_type && <p className="text-red-500 text-sm mt-1">{errors.subscription_type.message}</p>}
+        {errors.subscription_type && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.subscription_type.message}
+          </p>
+        )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700">Currency</label>
+        <label
+          htmlFor="currency"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Currency
+        </label>
         <select
+          id="currency"
           {...register("currency", { valueAsNumber: true })}
           className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
           disabled={loadingCurrencies}
         >
           <option value="">Select currency</option>
           {currencies.map((c) => (
-            <option key={c.id} value={c.id}>{c.alpha3} — {c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.alpha3} — {c.name}
+            </option>
           ))}
         </select>
-        {errors.currency && <p className="text-red-500 text-sm mt-1">{errors.currency.message}</p>}
+        {errors.currency && (
+          <p className="text-red-500 text-sm mt-1">{errors.currency.message}</p>
+        )}
       </div>
       <div>
-        <label htmlFor="monthly_payment" className="block text-sm font-medium text-gray-700">Monthly Payment</label>
-        <input id="monthly_payment" type="number" step="0.01" {...register("monthly_payment", { valueAsNumber: true })} placeholder="0.00" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" />
-        {errors.monthly_payment && <p className="text-red-500 text-sm mt-1">{errors.monthly_payment.message}</p>}
+        <label
+          htmlFor="monthly_payment"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Monthly Payment
+        </label>
+        <input
+          id="monthly_payment"
+          type="number"
+          step="0.01"
+          {...register("monthly_payment", { valueAsNumber: true })}
+          placeholder="0.00"
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+        />
+        {errors.monthly_payment && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.monthly_payment.message}
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-2">
-        <input type="checkbox" id="is_active" {...register("is_active")} className="rounded" />
-        <label htmlFor="is_active" className="text-sm font-medium text-gray-700">Active</label>
+        <input
+          type="checkbox"
+          id="is_active"
+          {...register("is_active")}
+          className="rounded"
+        />
+        <label
+          htmlFor="is_active"
+          className="text-sm font-medium text-gray-700"
+        >
+          Active
+        </label>
       </div>
       <div className="flex gap-2">
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
           <Plus className="size-4" />
           {subscription ? "Save Changes" : "Add Subscription"}
         </button>
-        <button type="button" onClick={() => onCancel?.()} className="px-4 py-2 bg-zinc-200 text-zinc-700 rounded-md hover:bg-zinc-300 transition-colors">
+        <button
+          type="button"
+          onClick={() => onCancel?.()}
+          className="px-4 py-2 bg-zinc-200 text-zinc-700 rounded-md hover:bg-zinc-300 transition-colors"
+        >
           Cancel
         </button>
       </div>

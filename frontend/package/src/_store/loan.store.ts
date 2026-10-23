@@ -1,7 +1,7 @@
-import {
+import type {
+  CreateLoanRequest,
   Loan,
   LoanSummary,
-  CreateLoanRequest,
   UpdateLoanRequest,
 } from "@/_models/loan.model";
 import { loanService } from "@/_services/loan.service";

@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Papa from "papaparse";
-import { Step1Upload } from "@/_models/upload.model";
+import { useEffect, useState } from "react";
+import type { Step1Upload } from "@/_models/upload.model";
 import { uploadService } from "@/_services/upload.service";
-import UploadStepUpload from "./upload/UploadStepUpload";
-import UploadStepTransform, {
-  ColumnMap,
-  ColumnMapType,
-} from "./upload/UploadStepTransform";
 import UploadStepErrors from "./upload/UploadStepErrors";
 import UploadStepProcess from "./upload/UploadStepProcess";
+import UploadStepTransform, {
+  type ColumnMap,
+  type ColumnMapType,
+} from "./upload/UploadStepTransform";
+import UploadStepUpload from "./upload/UploadStepUpload";
 
 const PREFS_KEY = "upload_form_prefs";
 
@@ -87,7 +87,7 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
   const [rowStart, setRowStart] = useState(() => prefs.rowStart);
   const [rowEnd, setRowEnd] = useState(0);
   const [columnMap, setColumnMap] = useState<ColumnMap>(() => {
-    const saved = prefs.columnMaps["credit_card"];
+    const saved = prefs.columnMaps.credit_card;
     return (
       saved ?? {
         uploadType: "credit_card",

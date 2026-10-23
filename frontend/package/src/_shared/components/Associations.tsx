@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useAssociationStore } from "@/_store/association.store";
-import { useAccountStore } from "@/_store/account.store";
-import { Association } from "@/_models/association.model";
+import { Pencil, Plus, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { Association } from "@/_models/association.model";
 import AssociationForm from "@/_shared/components/AssociationForm";
+import { useAccountStore } from "@/_store/account.store";
+import { useAssociationStore } from "@/_store/association.store";
 
 const DEBOUNCE_DELAY_MS = 400;
 
@@ -87,6 +87,7 @@ export default function Associations() {
             />
           </div>
           <button
+            type="button"
             onClick={() => setShowDuplicates((v) => !v)}
             className={`px-3 py-2 rounded-md text-sm border transition-colors ${showDuplicates ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-700 border-gray-300 hover:bg-zinc-50"}`}
           >
@@ -94,7 +95,10 @@ export default function Associations() {
           </button>
           <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
             <Dialog.Trigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+              <button
+                type="button"
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
+              >
                 <Plus className="size-5" />
                 New Association
               </button>
@@ -166,6 +170,7 @@ export default function Associations() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
+                        type="button"
                         onClick={() => setEditingAssociation(association)}
                         className="p-1.5 rounded hover:bg-zinc-100 transition-colors"
                         aria-label="Edit association"

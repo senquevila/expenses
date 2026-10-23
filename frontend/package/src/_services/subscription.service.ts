@@ -1,14 +1,14 @@
 import apiClient from "@/_libs/api/client";
 
 import {
-  Subscription,
-  SubscriptionSummary,
-  CreateSubscriptionRequest,
-  UpdateSubscriptionRequest,
-  SubscriptionsResponseSchema,
+  type CreateSubscriptionRequest,
+  type Subscription,
   SubscriptionSchema,
+  type SubscriptionSummary,
   SubscriptionSummarySchema,
+  SubscriptionsResponseSchema,
   ToggleResponseSchema,
+  type UpdateSubscriptionRequest,
 } from "@/_models/subscription.model";
 
 export const subscriptionService = {

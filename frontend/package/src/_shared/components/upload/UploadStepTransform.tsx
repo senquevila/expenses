@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // --- Types ---
 
@@ -191,10 +191,14 @@ export default function UploadStepTransform({
           </h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="start-row"
+                className="block text-xs font-medium text-zinc-600 mb-1"
+              >
                 Start row
               </label>
               <input
+                id="start-row"
                 type="number"
                 min={0}
                 value={rowStart}
@@ -206,10 +210,14 @@ export default function UploadStepTransform({
               </p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="end-row"
+                className="block text-xs font-medium text-zinc-600 mb-1"
+              >
                 End row
               </label>
               <input
+                id="end-row"
                 type="number"
                 min={0}
                 value={rowEnd}
@@ -252,10 +260,14 @@ export default function UploadStepTransform({
           {/* Savings account: currency */}
           {columnMap.uploadType === "savings_account" && (
             <div className="mb-3">
-              <label className="block text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="currency"
+                className="block text-xs font-medium text-zinc-600 mb-1"
+              >
                 Currency
               </label>
               <select
+                id="currency"
                 value={columnMap.currency}
                 onChange={(e) =>
                   onColumnMapChange({ ...columnMap, currency: e.target.value })
@@ -273,11 +285,15 @@ export default function UploadStepTransform({
           <div className="grid grid-cols-2 gap-x-3 gap-y-3">
             {/* Date */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="date"
+                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
+              >
                 <span className="inline-block w-3 h-3 rounded-sm bg-blue-600" />
                 Date
               </label>
               <input
+                id="date"
                 type="number"
                 min={1}
                 value={columnMap.date}
@@ -288,11 +304,15 @@ export default function UploadStepTransform({
 
             {/* Description */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="description"
+                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
+              >
                 <span className="inline-block w-3 h-3 rounded-sm bg-orange-500" />
                 Description
               </label>
               <input
+                id="description"
                 type="number"
                 min={1}
                 value={columnMap.description}
@@ -303,11 +323,15 @@ export default function UploadStepTransform({
 
             {/* Third field: Local / Debit */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="amount-column-1"
+                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
+              >
                 <span className="inline-block w-3 h-3 rounded-sm bg-emerald-600" />
                 {columnMap.uploadType === "credit_card" ? "Local" : "Debit"}
               </label>
               <input
+                id="amount-column-1"
                 type="number"
                 min={1}
                 value={
@@ -327,11 +351,15 @@ export default function UploadStepTransform({
 
             {/* Fourth field: USD / Credit */}
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1">
+              <label
+                htmlFor="amount-column-2"
+                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
+              >
                 <span className="inline-block w-3 h-3 rounded-sm bg-purple-600" />
                 {columnMap.uploadType === "credit_card" ? "USD" : "Credit"}
               </label>
               <input
+                id="amount-column-2"
                 type="number"
                 min={1}
                 value={
@@ -435,6 +463,7 @@ export default function UploadStepTransform({
           </span>
           <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={() => goToPage(safePage - 1)}
               disabled={safePage === 1}
               className="px-2 py-1 border border-zinc-300 rounded text-xs disabled:opacity-40 hover:bg-zinc-50"
@@ -448,6 +477,7 @@ export default function UploadStepTransform({
                 </span>
               ) : (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => goToPage(p as number)}
                   className={`px-2 py-1 border rounded text-xs ${p === safePage ? "bg-zinc-900 text-white border-zinc-900" : "border-zinc-300 hover:bg-zinc-50"}`}
@@ -457,6 +487,7 @@ export default function UploadStepTransform({
               ),
             )}
             <button
+              type="button"
               onClick={() => goToPage(safePage + 1)}
               disabled={safePage === totalPages}
               className="px-2 py-1 border border-zinc-300 rounded text-xs disabled:opacity-40 hover:bg-zinc-50"

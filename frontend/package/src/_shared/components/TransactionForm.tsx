@@ -1,20 +1,20 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { parseApiError } from "@/_libs/api/error";
+import type { Currency } from "@/_models/currency.model";
 import {
   CreateTransactionRequestSchema,
-  Transaction,
+  type Transaction,
 } from "@/_models/transaction.model";
-import { Currency } from "@/_models/currency.model";
 import { currencyService } from "@/_services/currency.service";
-import { useTransactionStore } from "@/_store/transaction.store";
-import { usePeriodStore } from "@/_store/period.store";
 import { useAccountStore } from "@/_store/account.store";
-import { parseApiError } from "@/_libs/api/error";
+import { usePeriodStore } from "@/_store/period.store";
+import { useTransactionStore } from "@/_store/transaction.store";
 
 interface TransactionFormProps {
   onCancel?: () => void;
@@ -174,10 +174,14 @@ export default function TransactionForm({
     <>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="period"
+            className="block text-sm font-medium text-gray-700"
+          >
             Period
           </label>
           <select
+            id="period"
             {...register("period", { valueAsNumber: true })}
             value={watch("period") || ""}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
@@ -195,10 +199,14 @@ export default function TransactionForm({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="account"
+            className="block text-sm font-medium text-gray-700"
+          >
             Account
           </label>
           <select
+            id="account"
             {...register("account", { valueAsNumber: true })}
             value={watch("account") || ""}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-white"
@@ -218,10 +226,14 @@ export default function TransactionForm({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="payment_date"
+            className="block text-sm font-medium text-gray-700"
+          >
             Date
           </label>
           <input
+            id="payment_date"
             type="date"
             {...register("payment_date")}
             disabled={!!transaction}
@@ -234,10 +246,14 @@ export default function TransactionForm({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700"
+          >
             Description
           </label>
           <input
+            id="description"
             type="text"
             {...register("description")}
             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
@@ -249,11 +265,15 @@ export default function TransactionForm({
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="amount"
+            className="block text-sm font-medium text-gray-700"
+          >
             Amount
           </label>
           <div className="flex gap-2">
             <input
+              id="amount"
               type="number"
               step="0.01"
               {...register("amount", { valueAsNumber: true })}
@@ -323,7 +343,10 @@ export default function TransactionForm({
             </AlertDialog.Description>
             <div className="mt-5 flex justify-end">
               <AlertDialog.Action asChild>
-                <button className="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-zinc-900 text-white rounded-md hover:bg-zinc-800 transition-colors"
+                >
                   Close
                 </button>
               </AlertDialog.Action>

@@ -1,6 +1,6 @@
-import { create } from "zustand";
 import { toast } from "sonner";
-import { Period } from "@/_models/period.model";
+import { create } from "zustand";
+import type { Period } from "@/_models/period.model";
 import { periodService } from "@/_services/period.service";
 
 interface PeriodState {
