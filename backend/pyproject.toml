@@ -1,20 +1,8 @@
-[tool.black]
+[tool.ruff]
 line-length = 120
-target-version = ['py313']
-exclude = '''
-/(
-    \.git
-  | \.venv
-  | venv
-  | \.eggs
-  | \.tox
-  | build
-  | dist
-  | migrations
-)/
-'''
+target-version = "py313"
+extend-exclude = ["migrations"]
 
-[tool.isort]
-profile = "black"
-line_length = 120
-skip_glob = ["*/migrations/*", ".venv/*", "venv/*"]
+[tool.ruff.lint]
+# E/W/F = flake8 defaults, I = isort
+select = ["E", "W", "F", "I"]

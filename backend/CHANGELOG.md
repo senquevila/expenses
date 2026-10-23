@@ -1,4 +1,7 @@
 # Changelog
+## 2026-10-23
+### Change
+- Replace black, isort, and flake8 with ruff.
 ## 2026-06-22
 ### New
 - Add a fields `identifier` to the upload model to group files that belong to the same account.

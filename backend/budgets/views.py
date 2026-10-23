@@ -57,7 +57,6 @@ class BudgetUpdateExpensesView(APIView):
         ).update(expense_amount=0)
 
         for expense in expenses:
-
             try:
                 assignament = BudgetAssignment.objects.get(
                     budget=budget,
