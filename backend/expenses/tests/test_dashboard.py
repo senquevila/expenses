@@ -64,8 +64,26 @@ class TestUploadGaps(TestCase):
         Upload.objects.create(identifier="card", start_date=date(2026, 2, 1), end_date=date(2026, 2, 28))
         Upload.objects.create(identifier="card", start_date=date(2026, 3, 20), end_date=date(2026, 3, 31))
 
-        result = upload_gaps(2026, date(2026, 4, 2))
+        result = upload_gaps(2026, date(2026, 4, 2), include_current_month=True)
 
         # Jan gap kept; Mar gap dropped (closed period); trailing 2-day gap too short
         gap = {"from": date(2026, 1, 6), "to": date(2026, 2, 1), "days": 26}
         self.assertEqual(result, [{"identifier": "card", "gaps": [gap]}])
+
+    def test_without_current_month_gaps_are_cut_at_previous_month_end(self):
+        Period.objects.create(month=3, year=2026, closed=True)
+        Period.objects.create(month=4, year=2026)
+        Upload.objects.create(identifier="card", start_date=date(2026, 3, 1), end_date=date(2026, 3, 31))
+        Upload.objects.create(identifier="cash", start_date=date(2026, 3, 1), end_date=date(2026, 3, 10))
+        Upload.objects.create(identifier="short", start_date=date(2026, 3, 1), end_date=date(2026, 3, 20))
+
+        # card: no gap before April; cash: cut at Mar 31 even though March is closed; short: 11 days < 15
+        gap = {"from": date(2026, 3, 11), "to": date(2026, 3, 31), "days": 21}
+        self.assertEqual(upload_gaps(2026, date(2026, 4, 25)), [{"identifier": "cash", "gaps": [gap]}])
+
+    def test_current_month_included_on_request(self):
+        Period.objects.create(month=4, year=2026)
+        Upload.objects.create(identifier="card", start_date=date(2026, 3, 1), end_date=date(2026, 3, 31))
+
+        gap = {"from": date(2026, 4, 1), "to": date(2026, 4, 25), "days": 25}
+        self.assertEqual(upload_gaps(2026, date(2026, 4, 25), True), [{"identifier": "card", "gaps": [gap]}])

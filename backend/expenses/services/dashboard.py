@@ -112,14 +112,25 @@ def period_dashboard(period: Period, today: date) -> dict:
     }
 
 
-def upload_gaps(year: int, today: date) -> list[dict]:
-    """Per identifier, gaps of MIN_GAP_DAYS+ between uploads that touch an open active period."""
+def upload_gaps(year: int, today: date, include_current_month: bool = False) -> list[dict]:
+    """Per identifier, gaps of MIN_GAP_DAYS+ between uploads.
+
+    With include_current_month: gaps up to today that touch an open active period.
+    Without it: gaps cut at the end of the previous month, open or closed.
+    """
+    if not include_current_month:
+        today = today.replace(day=1) - timedelta(days=1)
     ranges_by_id: dict[str, list[tuple[date, date]]] = {}
     anonymous: list[tuple[date, date]] = []
     uploads = Upload.objects.filter(
-        start_date__isnull=False, end_date__isnull=False, start_date__year__lte=year, end_date__year__gte=year
+        start_date__isnull=False,
+        end_date__isnull=False,
+        start_date__year__lte=year,
+        end_date__year__gte=year,
+        start_date__lte=today,
     ).values_list("identifier", "start_date", "end_date")
     for identifier, start, end in uploads:
+        end = min(end, today)
         if identifier:
             ranges_by_id.setdefault(identifier, []).append((start, end))
         else:
@@ -149,7 +160,8 @@ def upload_gaps(year: int, today: date) -> list[dict]:
         if (today - last_end).days >= MIN_GAP_DAYS:
             gaps.append({"from": last_end + timedelta(days=1), "to": today, "days": (today - last_end).days})
 
-        gaps = [g for g in gaps if any(g["from"] <= p_end and g["to"] >= p_start for p_start, p_end in open_periods)]
+        if include_current_month:
+            gaps = [g for g in gaps if any(g["from"] <= end and g["to"] >= start for start, end in open_periods)]
         if gaps:
             result.append({"identifier": identifier, "gaps": gaps})
     return result

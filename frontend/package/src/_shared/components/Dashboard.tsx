@@ -9,7 +9,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -63,16 +63,17 @@ export function Dashboard() {
   const [metrics, setMetrics] = useState<PeriodDashboard | null>(null);
   const [uploadGaps, setUploadGaps] = useState<UploadGaps>([]);
   const [uploadsRefreshing, setUploadsRefreshing] = useState(true);
+  const [includeCurrentMonth, setIncludeCurrentMonth] = useState(false);
 
-  const refreshUploads = () => {
+  const refreshUploads = useCallback(() => {
     setUploadsRefreshing(true);
     uploadService
-      .getGaps()
+      .getGaps(includeCurrentMonth)
       .then(setUploadGaps)
       .finally(() => setUploadsRefreshing(false));
-  };
+  }, [includeCurrentMonth]);
 
-  useEffect(refreshUploads, []);
+  useEffect(refreshUploads, [refreshUploads]);
 
   useEffect(() => {
     periodService.getAll().then((all) => {
@@ -126,64 +127,78 @@ export function Dashboard() {
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          {uploadGaps.length > 0 && (
-            <Dialog.Root>
-              <Dialog.Trigger asChild>
-                <button
-                  type="button"
-                  className="text-xs font-medium text-amber-700 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-200 transition-colors"
-                >
-                  {uploadGaps.length} missing upload
-                  {uploadGaps.length > 1 ? "s" : ""}
-                </button>
-              </Dialog.Trigger>
-              <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-                <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <Dialog.Title className="text-base font-semibold">
-                      Missing Uploads — {new Date().getFullYear()}
-                    </Dialog.Title>
-                    <button
-                      type="button"
-                      onClick={refreshUploads}
-                      disabled={uploadsRefreshing}
-                      className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-40 transition-colors"
-                      title="Refresh"
-                    >
-                      <RefreshCw
-                        className={`size-4 text-zinc-500 ${uploadsRefreshing ? "animate-spin" : ""}`}
-                      />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    {uploadGaps.map(({ identifier, gaps }) => (
-                      <div key={identifier}>
-                        <p className="text-sm font-medium text-zinc-800 mb-1.5">
-                          {identifier}
-                        </p>
-                        <div className="space-y-1">
-                          {gaps.map((gap, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 text-xs text-zinc-600"
-                            >
-                              <span className="font-mono">
-                                {gap.from} → {gap.to}
-                              </span>
-                              <span className="text-zinc-400">
-                                ({gap.days} days)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+          <Dialog.Root>
+            {/* Always visible so the dialog (and its filter) stays reachable at 0 */}
+            <Dialog.Trigger asChild>
+              <button
+                type="button"
+                className={`text-xs font-medium border px-2.5 py-1 rounded-full transition-colors ${
+                  uploadGaps.length > 0
+                    ? "text-amber-700 bg-amber-100 border-amber-200 hover:bg-amber-200"
+                    : "text-zinc-500 bg-zinc-100 border-zinc-200 hover:bg-zinc-200"
+                }`}
+              >
+                {uploadGaps.length} missing upload
+                {uploadGaps.length !== 1 ? "s" : ""}
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
+              <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <Dialog.Title className="text-base font-semibold">
+                    Missing Uploads — {new Date().getFullYear()}
+                  </Dialog.Title>
+                  <button
+                    type="button"
+                    onClick={refreshUploads}
+                    disabled={uploadsRefreshing}
+                    className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-40 transition-colors"
+                    title="Refresh"
+                  >
+                    <RefreshCw
+                      className={`size-4 text-zinc-500 ${uploadsRefreshing ? "animate-spin" : ""}`}
+                    />
+                  </button>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-zinc-600 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={includeCurrentMonth}
+                    onChange={(e) => setIncludeCurrentMonth(e.target.checked)}
+                  />
+                  Include current month
+                </label>
+                <div className="space-y-4">
+                  {uploadGaps.length === 0 && (
+                    <p className="text-sm text-zinc-400">No missing uploads.</p>
+                  )}
+                  {uploadGaps.map(({ identifier, gaps }) => (
+                    <div key={identifier}>
+                      <p className="text-sm font-medium text-zinc-800 mb-1.5">
+                        {identifier}
+                      </p>
+                      <div className="space-y-1">
+                        {gaps.map((gap, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-2 text-xs text-zinc-600"
+                          >
+                            <span className="font-mono">
+                              {gap.from} → {gap.to}
+                            </span>
+                            <span className="text-zinc-400">
+                              ({gap.days} days)
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </Dialog.Content>
-              </Dialog.Portal>
-            </Dialog.Root>
-          )}
+                    </div>
+                  ))}
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
         </div>
         <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm px-2 py-1.5">
           <button

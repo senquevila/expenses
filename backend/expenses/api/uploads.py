@@ -86,6 +86,10 @@ class UploadViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="gaps")
     def gaps(self, request, *args, **kwargs):
-        """Missing upload ranges per identifier for the current year. URL: GET /uploads/gaps/"""
+        """Missing upload ranges per identifier for the current year.
+
+        URL: GET /uploads/gaps/?include_current_month=true
+        """
         today = timezone.localdate()
-        return Response(upload_gaps(today.year, today), status=status.HTTP_200_OK)
+        include_current = request.query_params.get("include_current_month") == "true"
+        return Response(upload_gaps(today.year, today, include_current), status=status.HTTP_200_OK)

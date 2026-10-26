@@ -53,8 +53,10 @@ export const uploadService = {
     return UploadSchema.parse(response.data);
   },
 
-  async getGaps(): Promise<UploadGaps> {
-    const response = await apiClient.get("uploads/gaps/");
+  async getGaps(includeCurrentMonth = false): Promise<UploadGaps> {
+    const response = await apiClient.get("uploads/gaps/", {
+      params: { include_current_month: includeCurrentMonth },
+    });
     return UploadGapsSchema.parse(response.data);
   },
 
