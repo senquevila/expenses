@@ -4,11 +4,9 @@ from django.test import TestCase
 
 from expenses.models import Account, AccountAssociation, Currency, Period, Transaction, Upload
 from expenses.services.uploads import (
-    _detect_type_from_structure,
     _get_defaults,
     _parse_amount_field,
-    _parse_credit_card_row,
-    _parse_savings_account_row,
+    _parse_row,
     _update_interval_dates,
     process_upload_result,
 )
@@ -20,8 +18,10 @@ def cc_row(row_number, date_str, description, local_amount="", local_currency="H
         "row_number": row_number,
         "date": date_str,
         "description": description,
-        "local": {"amount": local_amount, "currency": local_currency},
-        "usd": {"amount": usd_amount, "currency": usd_currency},
+        "amounts": [
+            {"amount": local_amount, "currency": local_currency, "kind": "debit"},
+            {"amount": usd_amount, "currency": usd_currency, "kind": "debit"},
+        ],
     }
 
 
@@ -32,8 +32,10 @@ def sa_row(
         "row_number": row_number,
         "date": date_str,
         "description": description,
-        "debit": {"amount": debit_amount, "currency": debit_currency},
-        "credit": {"amount": credit_amount, "currency": credit_currency},
+        "amounts": [
+            {"amount": debit_amount, "currency": debit_currency, "kind": "debit"},
+            {"amount": credit_amount, "currency": credit_currency, "kind": "credit"},
+        ],
     }
 
 
@@ -46,28 +48,6 @@ class BaseServiceTestCase(TestCase):
         cls.income_account = Account.objects.create(name="__Ingreso__", sign=Account.HABER)
         cls.open_period = Period.objects.create(month=1, year=2024, closed=False)
         cls.closed_period = Period.objects.create(month=2, year=2024, closed=True)
-
-
-# ===========================================================================
-# _detect_type_from_structure
-# ===========================================================================
-
-
-class TestDetectTypeFromStructure(TestCase):
-    def test_detects_credit_card(self):
-        row = {"local": {}, "usd": {}, "description": "X"}
-        self.assertEqual(_detect_type_from_structure(row), Upload.UploadType.CREDIT_CARD)
-
-    def test_detects_savings_account(self):
-        row = {"debit": {}, "credit": {}, "description": "X"}
-        self.assertEqual(_detect_type_from_structure(row), Upload.UploadType.SAVINGS_ACCOUNT)
-
-    def test_returns_none_for_unknown_structure(self):
-        row = {"amount": "100", "description": "X"}
-        self.assertIsNone(_detect_type_from_structure(row))
-
-    def test_returns_none_for_empty_row(self):
-        self.assertIsNone(_detect_type_from_structure({}))
 
 
 # ===========================================================================
@@ -259,82 +239,58 @@ class TestParseAmountField(BaseServiceTestCase):
 
 
 # ===========================================================================
-# _parse_credit_card_row
+# _parse_row
 # ===========================================================================
 
 
-class TestParseCreditCardRow(BaseServiceTestCase):
-    def test_uses_local_amount_when_present(self):
-        row = cc_row(1, "2024-01-15", "WALMART", local_amount="100.00")
-        amount, currency, is_income = _parse_credit_card_row(row, self.hnl)
-        self.assertEqual(amount, 100.0)
-        self.assertEqual(currency, self.hnl)
-        self.assertFalse(is_income)
-
-    def test_falls_back_to_usd_when_local_empty(self):
-        row = cc_row(1, "2024-01-15", "PAYPAL", local_amount="0.00", usd_amount="14.00", usd_currency="USD")
-        amount, currency, is_income = _parse_credit_card_row(row, self.hnl)
-        self.assertEqual(amount, 14.0)
-        self.assertEqual(currency, self.usd)
-        self.assertFalse(is_income)
-
-    def test_negative_local_amount_is_income(self):
-        row = cc_row(1, "2024-01-15", "REFUND", local_amount="-50.00")
-        amount, currency, is_income = _parse_credit_card_row(row, self.hnl)
-        self.assertEqual(amount, -50.0)
-        self.assertTrue(is_income)
-
-    def test_both_empty_returns_none(self):
-        row = cc_row(1, "2024-01-15", "X")
-        amount, currency, is_income = _parse_credit_card_row(row, self.hnl)
-        self.assertIsNone(amount)
-        self.assertIsNone(currency)
-        self.assertFalse(is_income)
-
-    def test_usd_currency_resolved_from_local_field(self):
-        row = cc_row(1, "2024-01-15", "AMAZON", local_amount="50.00", local_currency="USD")
-        amount, currency, is_income = _parse_credit_card_row(row, self.hnl)
-        self.assertEqual(currency, self.usd)
-
-
-# ===========================================================================
-# _parse_savings_account_row
-# ===========================================================================
-
-
-class TestParseSavingsAccountRow(BaseServiceTestCase):
-    def test_credit_is_income(self):
-        row = sa_row(1, "2024-01-15", "SALARY", credit_amount="10000.00")
-        amount, currency, is_income = _parse_savings_account_row(row, self.hnl)
-        self.assertEqual(amount, 10000.0)
-        self.assertEqual(currency, self.hnl)
-        self.assertTrue(is_income)
-
+class TestParseRow(BaseServiceTestCase):
     def test_debit_is_expense(self):
-        row = sa_row(1, "2024-01-15", "RENT", debit_amount="5000.00")
-        amount, currency, is_income = _parse_savings_account_row(row, self.hnl)
+        amount, currency, is_income = _parse_row(sa_row(1, "2024-01-15", "RENT", debit_amount="5000.00"), self.hnl)
         self.assertEqual(amount, 5000.0)
         self.assertEqual(currency, self.hnl)
         self.assertFalse(is_income)
 
-    def test_credit_takes_precedence_over_debit(self):
-        row = sa_row(1, "2024-01-15", "ENTRY", debit_amount="100.00", credit_amount="200.00")
-        amount, currency, is_income = _parse_savings_account_row(row, self.hnl)
-        self.assertEqual(amount, 200.0)
+    def test_credit_is_income(self):
+        amount, _, is_income = _parse_row(sa_row(1, "2024-01-15", "SALARY", credit_amount="10000.00"), self.hnl)
+        self.assertEqual(amount, 10000.0)
         self.assertTrue(is_income)
 
-    def test_both_empty_returns_none(self):
-        row = sa_row(1, "2024-01-15", "X")
-        amount, currency, is_income = _parse_savings_account_row(row, self.hnl)
-        self.assertIsNone(amount)
-        self.assertIsNone(currency)
+    def test_negative_debit_with_credit_column_stays_expense(self):
+        row = sa_row(1, "2024-01-15", "RENT", debit_amount="-5000.00")
+        amount, _, is_income = _parse_row(row, self.hnl)
+        self.assertEqual(amount, 5000.0)
         self.assertFalse(is_income)
 
-    def test_usd_credit_uses_usd_currency(self):
-        row = sa_row(1, "2024-01-15", "WIRE", credit_amount="2187.00", credit_currency="USD")
-        amount, currency, is_income = _parse_savings_account_row(row, self.hnl)
-        self.assertEqual(currency, self.usd)
+    def test_negative_amount_flips_when_single_kind(self):
+        amount, _, is_income = _parse_row(cc_row(1, "2024-01-15", "PAYMENT", local_amount="-50.00"), self.hnl)
+        self.assertEqual(amount, 50.0)
         self.assertTrue(is_income)
+
+    def test_negative_credit_column_alone_is_expense(self):
+        row = {"amounts": [{"amount": "-30.00", "currency": "", "kind": "credit"}]}
+        amount, _, is_income = _parse_row(row, self.hnl)
+        self.assertEqual(amount, 30.0)
+        self.assertFalse(is_income)
+
+    def test_first_non_empty_amount_wins(self):
+        row = cc_row(1, "2024-01-15", "PAYPAL", local_amount="0.00", usd_amount="14.00")
+        amount, currency, is_income = _parse_row(row, self.hnl)
+        self.assertEqual(amount, 14.0)
+        self.assertEqual(currency, self.usd)
+        self.assertFalse(is_income)
+
+    def test_all_empty_returns_none(self):
+        self.assertEqual(_parse_row(sa_row(1, "2024-01-15", "X"), self.hnl), (None, None, False))
+
+    def test_currency_embedded_in_amount(self):
+        row = {"amounts": [{"amount": "USD 12.50", "currency": "", "kind": "debit"}]}
+        _, currency, _ = _parse_row(row, self.hnl)
+        self.assertEqual(currency, self.usd)
+
+    def test_explicit_currency_beats_embedded(self):
+        row = {"amounts": [{"amount": "$12.50", "currency": "HNL", "kind": "debit"}]}
+        _, currency, _ = _parse_row(row, self.usd)
+        self.assertEqual(currency, self.hnl)
 
 
 # ===========================================================================
@@ -413,14 +369,6 @@ class TestProcessUploadResult(BaseServiceTestCase):
         upload.refresh_from_db()
         self.assertEqual(upload.upload_status, Upload.UploadStatus.FAILED)
         self.assertEqual(upload.fails[0]["error"], "upload_type is not set")
-
-    def test_fails_when_type_does_not_match_structure(self):
-        rows = [cc_row(1, "2024-01-15", "X", local_amount="100.00")]
-        upload = Upload.objects.create(result=rows, upload_type=Upload.UploadType.SAVINGS_ACCOUNT)
-        process_upload_result(upload)
-        upload.refresh_from_db()
-        self.assertEqual(upload.upload_status, Upload.UploadStatus.FAILED)
-        self.assertIn("does not match", upload.fails[0]["error"])
 
     # --- Successful credit card processing ---
 

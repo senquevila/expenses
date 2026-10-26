@@ -52,7 +52,29 @@ export const Step1UploadSchema = z.object({
   file: z.string().nullable(),
 });
 
+export const UploadTemplateSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  upload_type: z.enum(["CREDIT_CARD", "SAVINGS_ACCOUNT"]),
+  row_start: z.number(),
+  active: z.boolean(),
+  columns: z.object({
+    date: z.number(),
+    description: z.number(),
+    currencyCol: z.number().optional(),
+    amounts: z.array(
+      z.object({
+        col: z.number(),
+        kind: z.enum(["debit", "credit"]),
+        currency: z.string().optional(),
+      }),
+    ),
+  }),
+});
+
 // Types
+export type UploadTemplate = z.infer<typeof UploadTemplateSchema>;
+export type UploadTemplateRequest = Omit<UploadTemplate, "id">;
 export type Upload = z.infer<typeof UploadSchema>;
 export type Step1Upload = z.infer<typeof Step1UploadSchema>;
 export type CreateUploadRequest = z.infer<typeof CreateUploadRequestSchema>;

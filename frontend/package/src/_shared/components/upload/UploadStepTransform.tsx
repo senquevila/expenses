@@ -1,27 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
-// --- Types ---
-
-export type ColumnMapType = "credit_card" | "savings_account";
-
-export type ColumnMap =
-  | {
-      uploadType: "credit_card";
-      date: number;
-      description: number;
-      local: number;
-      usd: number;
-    }
-  | {
-      uploadType: "savings_account";
-      date: number;
-      description: number;
-      debit: number;
-      credit: number;
-      currency: string;
-    };
+import ColumnMapEditor, {
+  type ColumnMap,
+  type ColumnMapType,
+  DEFAULT_COLUMN_MAPS,
+} from "../ColumnMapEditor";
 
 interface UploadStepTransformProps {
   rows: string[][];
@@ -30,6 +14,8 @@ interface UploadStepTransformProps {
   rowEnd: number;
   columnMap: ColumnMap;
   savedColumnMaps?: Partial<Record<ColumnMapType, ColumnMap>>;
+  // Set when the Template step picked one: start row and columns are fixed then
+  templateName: string | null;
   onRowStartChange: (v: number) => void;
   onRowEndChange: (v: number) => void;
   onColumnMapChange: (map: ColumnMap) => void;
@@ -42,44 +28,26 @@ const UPLOAD_TYPES: { value: ColumnMapType; label: string }[] = [
   { value: "savings_account", label: "Savings account" },
 ];
 
-const DEFAULTS: Record<ColumnMapType, ColumnMap> = {
-  credit_card: {
-    uploadType: "credit_card",
-    date: 1,
-    description: 2,
-    local: 3,
-    usd: 4,
-  },
-  savings_account: {
-    uploadType: "savings_account",
-    date: 1,
-    description: 2,
-    debit: 3,
-    credit: 4,
-    currency: "",
-  },
-};
-
 const COL_COLORS = {
   date: {
-    bg: "bg-blue-600",
     cell: "bg-blue-600 text-white",
     header: "bg-blue-700 text-white",
   },
   description: {
-    bg: "bg-orange-500",
     cell: "bg-orange-500 text-white",
     header: "bg-orange-600 text-white",
   },
-  third: {
-    bg: "bg-emerald-600",
+  debit: {
     cell: "bg-emerald-600 text-white",
     header: "bg-emerald-700 text-white",
   },
-  fourth: {
-    bg: "bg-purple-600",
+  credit: {
     cell: "bg-purple-600 text-white",
     header: "bg-purple-700 text-white",
+  },
+  currency: {
+    cell: "bg-zinc-500 text-white",
+    header: "bg-zinc-600 text-white",
   },
 };
 
@@ -87,27 +55,21 @@ const PAGE_SIZES = [10, 25, 50, 100];
 
 // --- Helpers ---
 
-function getThirdCol(map: ColumnMap) {
-  return map.uploadType === "credit_card" ? map.local : map.debit;
-}
-function getFourthCol(map: ColumnMap) {
-  return map.uploadType === "credit_card" ? map.usd : map.credit;
+function colColors(displayCol: number, map: ColumnMap) {
+  if (displayCol === map.date) return COL_COLORS.date;
+  if (displayCol === map.description) return COL_COLORS.description;
+  const amount = map.amounts.find((a) => a.col === displayCol);
+  if (amount) return COL_COLORS[amount.kind];
+  if (displayCol === map.currencyCol) return COL_COLORS.currency;
+  return null;
 }
 
 function cellBg(displayCol: number, map: ColumnMap): string {
-  if (displayCol === map.date) return COL_COLORS.date.cell;
-  if (displayCol === map.description) return COL_COLORS.description.cell;
-  if (displayCol === getThirdCol(map)) return COL_COLORS.third.cell;
-  if (displayCol === getFourthCol(map)) return COL_COLORS.fourth.cell;
-  return "";
+  return colColors(displayCol, map)?.cell ?? "";
 }
 
 function headerBg(displayCol: number, map: ColumnMap): string {
-  if (displayCol === map.date) return COL_COLORS.date.header;
-  if (displayCol === map.description) return COL_COLORS.description.header;
-  if (displayCol === getThirdCol(map)) return COL_COLORS.third.header;
-  if (displayCol === getFourthCol(map)) return COL_COLORS.fourth.header;
-  return "bg-zinc-100 text-zinc-600";
+  return colColors(displayCol, map)?.header ?? "bg-zinc-100 text-zinc-600";
 }
 
 function buildPageNumbers(current: number, total: number): (number | "...")[] {
@@ -134,6 +96,7 @@ export default function UploadStepTransform({
   rowEnd,
   columnMap,
   savedColumnMaps,
+  templateName,
   onRowStartChange,
   onRowEndChange,
   onColumnMapChange,
@@ -166,12 +129,32 @@ export default function UploadStepTransform({
   const goToPage = (p: number) => setPage(Math.max(1, Math.min(totalPages, p)));
 
   function handleTypeChange(newType: ColumnMapType) {
-    onColumnMapChange(savedColumnMaps?.[newType] ?? DEFAULTS[newType]);
+    onColumnMapChange(
+      savedColumnMaps?.[newType] ?? DEFAULT_COLUMN_MAPS[newType],
+    );
   }
 
-  function setNum(key: string, value: number) {
-    onColumnMapChange({ ...columnMap, [key]: value } as ColumnMap);
-  }
+  const endRowInput = (
+    <div>
+      <label
+        htmlFor="end-row"
+        className="block text-xs font-medium text-zinc-600 mb-1"
+      >
+        End row
+      </label>
+      <input
+        id="end-row"
+        type="number"
+        min={0}
+        value={rowEnd}
+        onChange={(e) => onRowEndChange(Number(e.target.value))}
+        className="block w-full border border-gray-300 rounded-md p-2 text-sm"
+      />
+      <p className="text-xs text-zinc-400 mt-1">
+        Row number where the data ends
+      </p>
+    </div>
+  );
 
   return (
     <div className="flex gap-6 min-h-0">
@@ -184,200 +167,76 @@ export default function UploadStepTransform({
           </p>
         )}
 
-        {/* Row dimension */}
-        <div>
-          <h3 className="text-sm font-semibold text-zinc-800 mb-3">
-            CSV row dimension
-          </h3>
+        {templateName ? (
           <div className="space-y-3">
-            <div>
-              <label
-                htmlFor="start-row"
-                className="block text-xs font-medium text-zinc-600 mb-1"
-              >
-                Start row
-              </label>
-              <input
-                id="start-row"
-                type="number"
-                min={0}
-                value={rowStart}
-                onChange={(e) => onRowStartChange(Number(e.target.value))}
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
-              <p className="text-xs text-zinc-400 mt-1">
-                Row number where the data starts
-              </p>
-            </div>
-            <div>
-              <label
-                htmlFor="end-row"
-                className="block text-xs font-medium text-zinc-600 mb-1"
-              >
-                End row
-              </label>
-              <input
-                id="end-row"
-                type="number"
-                min={0}
-                value={rowEnd}
-                onChange={(e) => onRowEndChange(Number(e.target.value))}
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
-              <p className="text-xs text-zinc-400 mt-1">
-                Row number where the data ends
-              </p>
-            </div>
+            <p className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-200 rounded px-2 py-1.5">
+              Template <span className="font-semibold">{templateName}</span>{" "}
+              sets start row {rowStart} and the columns. Check the colors in the
+              preview.
+            </p>
+            {endRowInput}
           </div>
-        </div>
-
-        <hr className="border-zinc-200" />
-
-        {/* Column mapping */}
-        <div>
-          <h3 className="text-sm font-semibold text-zinc-800 mb-3">
-            Column mapping
-          </h3>
-
-          {/* Type selector */}
-          <div className="flex rounded-md border border-zinc-300 overflow-hidden mb-4 text-xs">
-            {UPLOAD_TYPES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => handleTypeChange(value)}
-                className={`flex-1 py-1.5 transition-colors ${
-                  columnMap.uploadType === value
-                    ? "bg-zinc-900 text-white"
-                    : "bg-white text-zinc-600 hover:bg-zinc-50"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Savings account: currency */}
-          {columnMap.uploadType === "savings_account" && (
-            <div className="mb-3">
-              <label
-                htmlFor="currency"
-                className="block text-xs font-medium text-zinc-600 mb-1"
-              >
-                Currency
-              </label>
-              <select
-                id="currency"
-                value={columnMap.currency}
-                onChange={(e) =>
-                  onColumnMapChange({ ...columnMap, currency: e.target.value })
-                }
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm bg-white"
-              >
-                <option value="">---------</option>
-                <option value="HNL">HNL</option>
-                <option value="USD">USD</option>
-              </select>
-            </div>
-          )}
-
-          {/* Numeric column inputs */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-            {/* Date */}
+        ) : (
+          <>
+            {/* Row dimension */}
             <div>
-              <label
-                htmlFor="date"
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
-              >
-                <span className="inline-block w-3 h-3 rounded-sm bg-blue-600" />
-                Date
-              </label>
-              <input
-                id="date"
-                type="number"
-                min={1}
-                value={columnMap.date}
-                onChange={(e) => setNum("date", Number(e.target.value))}
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
+              <h3 className="text-sm font-semibold text-zinc-800 mb-3">
+                CSV row dimension
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <label
+                    htmlFor="start-row"
+                    className="block text-xs font-medium text-zinc-600 mb-1"
+                  >
+                    Start row
+                  </label>
+                  <input
+                    id="start-row"
+                    type="number"
+                    min={0}
+                    value={rowStart}
+                    onChange={(e) => onRowStartChange(Number(e.target.value))}
+                    className="block w-full border border-gray-300 rounded-md p-2 text-sm"
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Row number where the data starts
+                  </p>
+                </div>
+                {endRowInput}
+              </div>
             </div>
 
-            {/* Description */}
-            <div>
-              <label
-                htmlFor="description"
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
-              >
-                <span className="inline-block w-3 h-3 rounded-sm bg-orange-500" />
-                Description
-              </label>
-              <input
-                id="description"
-                type="number"
-                min={1}
-                value={columnMap.description}
-                onChange={(e) => setNum("description", Number(e.target.value))}
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
-            </div>
+            <hr className="border-zinc-200" />
 
-            {/* Third field: Local / Debit */}
+            {/* Column mapping */}
             <div>
-              <label
-                htmlFor="amount-column-1"
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
-              >
-                <span className="inline-block w-3 h-3 rounded-sm bg-emerald-600" />
-                {columnMap.uploadType === "credit_card" ? "Local" : "Debit"}
-              </label>
-              <input
-                id="amount-column-1"
-                type="number"
-                min={1}
-                value={
-                  columnMap.uploadType === "credit_card"
-                    ? columnMap.local
-                    : columnMap.debit
-                }
-                onChange={(e) =>
-                  setNum(
-                    columnMap.uploadType === "credit_card" ? "local" : "debit",
-                    Number(e.target.value),
-                  )
-                }
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
-            </div>
+              <h3 className="text-sm font-semibold text-zinc-800 mb-3">
+                Column mapping
+              </h3>
 
-            {/* Fourth field: USD / Credit */}
-            <div>
-              <label
-                htmlFor="amount-column-2"
-                className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 mb-1"
-              >
-                <span className="inline-block w-3 h-3 rounded-sm bg-purple-600" />
-                {columnMap.uploadType === "credit_card" ? "USD" : "Credit"}
-              </label>
-              <input
-                id="amount-column-2"
-                type="number"
-                min={1}
-                value={
-                  columnMap.uploadType === "credit_card"
-                    ? columnMap.usd
-                    : columnMap.credit
-                }
-                onChange={(e) =>
-                  setNum(
-                    columnMap.uploadType === "credit_card" ? "usd" : "credit",
-                    Number(e.target.value),
-                  )
-                }
-                className="block w-full border border-gray-300 rounded-md p-2 text-sm"
-              />
+              {/* Type selector */}
+              <div className="flex rounded-md border border-zinc-300 overflow-hidden mb-4 text-xs">
+                {UPLOAD_TYPES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleTypeChange(value)}
+                    className={`flex-1 py-1.5 transition-colors ${
+                      columnMap.uploadType === value
+                        ? "bg-zinc-900 text-white"
+                        : "bg-white text-zinc-600 hover:bg-zinc-50"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <ColumnMapEditor value={columnMap} onChange={onColumnMapChange} />
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Table panel */}

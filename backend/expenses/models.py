@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F
 from django.db.models.functions import Abs
@@ -159,6 +160,9 @@ class Upload(CreationModificationDateMixin):
         blank=True,
         null=True,
     )
+    template = models.ForeignKey(
+        "UploadTemplate", verbose_name=_("Plantilla"), on_delete=models.SET_NULL, blank=True, null=True
+    )
 
     class Meta:
         verbose_name = _("Subida de archivo")
@@ -166,6 +170,56 @@ class Upload(CreationModificationDateMixin):
 
     def __str__(self) -> str:
         return str(self.file.name)
+
+
+class UploadTemplate(CreationModificationDateMixin):
+    """How to read a bank's CSV, picked by hand on upload. When a bank changes its format, add a new template."""
+
+    name = models.CharField(_("Nombre"), max_length=100)
+    upload_type = models.CharField(_("Tipo de subida"), max_length=50, choices=Upload.UploadType.choices)
+    row_start = models.PositiveIntegerField(_("Fila inicial"), default=0)
+    columns = models.JSONField(
+        _("Columnas"),
+        default=dict,
+        help_text=_(
+            'Columnas 1-based. Ej: {"date": 1, "description": 4, "currencyCol": 5, "amounts": '
+            '[{"col": 6, "kind": "debit"}, {"col": 7, "kind": "credit", "currency": "USD"}]}. '
+            "0 = la columna no existe en el archivo. currencyCol y currency son opcionales; "
+            "sin ellas se usa la moneda escrita en el monto o la default."
+        ),
+    )
+    active = models.BooleanField(_("Activa"), default=True)
+
+    class Meta:
+        verbose_name = _("Plantilla de subida")
+        verbose_name_plural = _("Plantillas de subida")
+        ordering = ["-created"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_upload_type_display()})"
+
+    def clean(self):
+        cols = self.columns if isinstance(self.columns, dict) else {}
+
+        def is_col(value):
+            return isinstance(value, int) and value >= 1
+
+        errors = [
+            f"'{key}' must be a column number >= 1" for key in ("date", "description") if not is_col(cols.get(key))
+        ]
+        if cols.get("currencyCol", 0) != 0 and not is_col(cols["currencyCol"]):
+            errors.append("'currencyCol' must be a column number >= 1, or 0 when the file has none")
+        amounts = cols.get("amounts")
+        if not isinstance(amounts, list) or not amounts:
+            errors.append("'amounts' needs at least one column")
+        else:
+            for i, amount in enumerate(amounts):
+                if not isinstance(amount, dict) or not is_col(amount.get("col")):
+                    errors.append(f"amounts[{i}].col must be a column number >= 1")
+                elif amount.get("kind") not in ("debit", "credit"):
+                    errors.append(f"amounts[{i}].kind must be 'debit' or 'credit'")
+        if errors:
+            raise ValidationError({"columns": errors})
 
 
 class TransactionQuerySet(models.QuerySet):

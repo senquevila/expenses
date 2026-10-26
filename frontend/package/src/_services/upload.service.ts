@@ -7,6 +7,9 @@ import {
   type UploadGaps,
   UploadGapsSchema,
   UploadSchema,
+  type UploadTemplate,
+  type UploadTemplateRequest,
+  UploadTemplateSchema,
 } from "@/_models/upload.model";
 
 export interface UploadPage {
@@ -65,6 +68,27 @@ export const uploadService = {
     return response.data.identifiers ?? [];
   },
 
+  async getTemplates(activeOnly = false): Promise<UploadTemplate[]> {
+    const response = await apiClient.get("upload_templates/", {
+      params: activeOnly ? { active: true } : {},
+    });
+    return UploadTemplateSchema.array().parse(response.data);
+  },
+
+  async saveTemplate(
+    data: UploadTemplateRequest,
+    id?: number,
+  ): Promise<UploadTemplate> {
+    const response = id
+      ? await apiClient.put(`upload_templates/${id}/`, data)
+      : await apiClient.post("upload_templates/", data);
+    return UploadTemplateSchema.parse(response.data);
+  },
+
+  async deleteTemplate(id: number): Promise<void> {
+    await apiClient.delete(`upload_templates/${id}/`);
+  },
+
   async step1(file: File, identifier?: string): Promise<Step1Upload> {
     const formData = new FormData();
     formData.append("file", file);
@@ -79,10 +103,12 @@ export const uploadService = {
     id: number,
     result: unknown,
     uploadType: string,
+    templateId: number | null = null,
   ): Promise<Upload> {
     const response = await apiClient.post(`uploads/${id}/step2/`, {
       result,
       upload_type: uploadType.toUpperCase(),
+      template: templateId,
       start_date: null,
       end_date: null,
     });

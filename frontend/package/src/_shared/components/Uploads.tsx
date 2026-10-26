@@ -121,7 +121,7 @@ export default function Uploads() {
           </Dialog.Trigger>
           <Dialog.Portal>
             <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-6xl -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
+            <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-6xl max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
               <Dialog.Title className="text-xl font-semibold mb-4">
                 New Upload
               </Dialog.Title>
@@ -323,7 +323,7 @@ export default function Uploads() {
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-5xl max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
             <Dialog.Title className="text-xl font-semibold mb-4">
               Transactions — {fileName(selectedUpload?.file ?? null)}
             </Dialog.Title>

@@ -13,6 +13,7 @@ from expenses.models import (
     Subscription,
     Transaction,
     Upload,
+    UploadTemplate,
 )
 from expenses.utils.tools import change_account_from_assoc, remove_invalid_transactions
 
@@ -169,11 +170,18 @@ remove_empty_uploads.short_description = "Remove uploads with no transactions"
 
 @admin.register(Upload)
 class UploadAdmin(admin.ModelAdmin):
-    list_display = ("file", "identifier", "start_date", "end_date")
+    list_display = ("file", "identifier", "template", "start_date", "end_date")
     search_fields = ("file", "identifier")
     list_filter = ("identifier", "upload_type", "upload_status")
     actions = [remove_empty_uploads]
     ordering = ("-created",)
+
+
+@admin.register(UploadTemplate)
+class UploadTemplateAdmin(admin.ModelAdmin):
+    list_display = ("name", "upload_type", "row_start", "active", "created")
+    list_filter = ("upload_type", "active")
+    search_fields = ("name",)
 
 
 @admin.register(ProgramTransaction)

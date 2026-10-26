@@ -2,17 +2,17 @@
 
 import Papa from "papaparse";
 import { useEffect, useState } from "react";
-import type { Step1Upload } from "@/_models/upload.model";
+import type { Step1Upload, UploadTemplate } from "@/_models/upload.model";
 import { uploadService } from "@/_services/upload.service";
+import type { ColumnMap, ColumnMapType } from "./ColumnMapEditor";
 import UploadStepErrors from "./upload/UploadStepErrors";
 import UploadStepProcess from "./upload/UploadStepProcess";
-import UploadStepTransform, {
-  type ColumnMap,
-  type ColumnMapType,
-} from "./upload/UploadStepTransform";
+import UploadStepTemplate from "./upload/UploadStepTemplate";
+import UploadStepTransform from "./upload/UploadStepTransform";
 import UploadStepUpload from "./upload/UploadStepUpload";
 
-const PREFS_KEY = "upload_form_prefs";
+// v2: column maps switched to the generic amounts list
+const PREFS_KEY = "upload_form_prefs_v2";
 
 interface UploadFormPrefs {
   rowStart: number;
@@ -35,6 +35,13 @@ function savePrefs(prefs: UploadFormPrefs) {
   } catch {}
 }
 
+function templateToColumnMap(t: UploadTemplate): ColumnMap {
+  return {
+    ...t.columns,
+    uploadType: t.upload_type.toLowerCase() as ColumnMapType,
+  };
+}
+
 function resolveInitialRowEnd(
   savedRowEnd: number | null,
   lastRow: number,
@@ -45,8 +52,14 @@ function resolveInitialRowEnd(
   return Math.min(savedRowEnd, lastRow);
 }
 
-const STEPS = ["Upload", "Transform", "Errors", "Transactions"] as const;
-type Step = 0 | 1 | 2 | 3;
+const STEPS = [
+  "Upload",
+  "Template",
+  "Transform",
+  "Errors",
+  "Transactions",
+] as const;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 interface UploadFormProps {
   onCancel?: () => void;
@@ -73,10 +86,17 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
   const [identifier, setIdentifier] = useState("");
   const [identifierOptions, setIdentifierOptions] = useState<string[]>([]);
 
+  const [templates, setTemplates] = useState<UploadTemplate[]>([]);
+  const [templateId, setTemplateId] = useState<number | null>(null);
+
   useEffect(() => {
     uploadService
       .getIdentifiers()
       .then(setIdentifierOptions)
+      .catch(() => {});
+    uploadService
+      .getTemplates(true)
+      .then(setTemplates)
       .catch(() => {});
   }, []);
 
@@ -93,11 +113,19 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
         uploadType: "credit_card",
         date: 1,
         description: 2,
-        local: 3,
-        usd: 4,
+        amounts: [
+          { col: 3, kind: "debit", currency: "HNL" },
+          { col: 4, kind: "debit", currency: "USD" },
+        ],
       }
     );
   });
+
+  function applyTemplate(t: UploadTemplate) {
+    setTemplateId(t.id);
+    setRowStart(t.row_start);
+    setColumnMap(templateToColumnMap(t));
+  }
 
   const handleStepOneNext = async () => {
     if (!identifier.trim()) {
@@ -132,25 +160,16 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
     if (!uploadResult) return;
 
     const errors: string[] = [];
-    const colNums =
-      columnMap.uploadType === "credit_card"
-        ? [
-            columnMap.date,
-            columnMap.description,
-            columnMap.local,
-            columnMap.usd,
-          ]
-        : [
-            columnMap.date,
-            columnMap.description,
-            columnMap.debit,
-            columnMap.credit,
-          ];
+    const colNums = [
+      columnMap.date,
+      columnMap.description,
+      ...columnMap.amounts.map((a) => a.col),
+    ];
     if (colNums.some((n) => n < 1)) {
       errors.push("All column numbers must be at least 1.");
     }
-    if (columnMap.uploadType === "savings_account" && !columnMap.currency) {
-      errors.push("Please select a currency.");
+    if (columnMap.amounts.length === 0) {
+      errors.push("Add at least one amount column.");
     }
     if (rowEnd < rowStart) {
       errors.push("End row must be greater than or equal to start row.");
@@ -163,39 +182,36 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
     setLoading(true);
     try {
       const dataRows = parsedRows.slice(rowStart, rowEnd + 1);
-      const result =
-        columnMap.uploadType === "credit_card"
-          ? dataRows.map((row, i) => ({
-              row_number: rowStart + i,
-              date: row[columnMap.date - 1] ?? "",
-              description: row[columnMap.description - 1] ?? "",
-              local: {
-                amount: row[columnMap.local - 1] ?? "",
-                currency: "HNL",
-              },
-              usd: { amount: row[columnMap.usd - 1] ?? "", currency: "USD" },
-            }))
-          : dataRows.map((row, i) => ({
-              row_number: rowStart + i,
-              date: row[columnMap.date - 1] ?? "",
-              description: row[columnMap.description - 1] ?? "",
-              debit: {
-                amount: row[columnMap.debit - 1] ?? "",
-                currency: columnMap.currency,
-              },
-              credit: {
-                amount: row[columnMap.credit - 1] ?? "",
-                currency: columnMap.currency,
-              },
-            }));
-      await uploadService.step2(uploadResult.id, result, columnMap.uploadType);
+      const result = dataRows.map((row, i) => {
+        const currencyCol = columnMap.currencyCol ?? 0;
+        const rowCurrency =
+          currencyCol > 0
+            ? (row[currencyCol - 1]?.trim().toUpperCase() ?? "")
+            : "";
+        return {
+          row_number: rowStart + i,
+          date: row[columnMap.date - 1] ?? "",
+          description: row[columnMap.description - 1] ?? "",
+          amounts: columnMap.amounts.map((a) => ({
+            amount: row[a.col - 1] ?? "",
+            currency: a.currency || rowCurrency,
+            kind: a.kind,
+          })),
+        };
+      });
+      await uploadService.step2(
+        uploadResult.id,
+        result,
+        columnMap.uploadType,
+        templateId,
+      );
       savePrefs({
         rowStart,
         rowEnd,
         columnMaps: { ...prefs.columnMaps, [columnMap.uploadType]: columnMap },
       });
       setApiError(null);
-      setStep(2);
+      setStep(3);
     } catch (e: unknown) {
       const data = (e as { response?: { data?: unknown } })?.response?.data;
       if (data && typeof data === "object") {
@@ -216,7 +232,7 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
       handleStepOneNext();
       return;
     }
-    if (step === 1) {
+    if (step === 2) {
       handleStepTwoNext();
       return;
     }
@@ -281,6 +297,18 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
       )}
 
       {step === 1 && (
+        <UploadStepTemplate
+          templates={templates}
+          templateId={templateId}
+          onChange={(id) => {
+            const t = templates.find((x) => x.id === id);
+            if (t) applyTemplate(t);
+            else setTemplateId(null);
+          }}
+        />
+      )}
+
+      {step === 2 && (
         <UploadStepTransform
           rows={parsedRows}
           fileName={file?.name ?? null}
@@ -288,17 +316,24 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
           rowEnd={rowEnd}
           columnMap={columnMap}
           savedColumnMaps={prefs.columnMaps}
+          templateName={
+            templates.find((t) => t.id === templateId)?.name ?? null
+          }
           onRowStartChange={setRowStart}
           onRowEndChange={setRowEnd}
-          onColumnMapChange={setColumnMap}
+          onColumnMapChange={(map) => {
+            // Hand-edited mapping no longer matches the template
+            setTemplateId(null);
+            setColumnMap(map);
+          }}
         />
       )}
 
-      {step === 2 && uploadResult && (
+      {step === 3 && uploadResult && (
         <UploadStepErrors uploadId={uploadResult.id} />
       )}
 
-      {step === 3 && uploadResult && (
+      {step === 4 && uploadResult && (
         <UploadStepProcess uploadId={uploadResult.id} />
       )}
 
@@ -320,9 +355,20 @@ export default function UploadForm({ onCancel }: UploadFormProps) {
             Cancel
           </button>
         )}
-        {step > 0 && <div />}
+        {step === 2 ? (
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            disabled={loading}
+            className="px-4 py-2 bg-zinc-200 text-zinc-700 rounded-md hover:bg-zinc-300 transition-colors disabled:opacity-50"
+          >
+            Back
+          </button>
+        ) : (
+          step > 0 && <div />
+        )}
 
-        {step < 3 ? (
+        {step < 4 ? (
           <button
             type="button"
             onClick={handleNext}

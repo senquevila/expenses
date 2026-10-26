@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from expenses.models import (
@@ -12,6 +13,7 @@ from expenses.models import (
     Subscription,
     Transaction,
     Upload,
+    UploadTemplate,
 )
 
 
@@ -185,6 +187,24 @@ class UploadStep1InputSerializer(serializers.Serializer):
 class UploadStep2Serializer(serializers.Serializer):
     result = serializers.JSONField()
     upload_type = serializers.ChoiceField(choices=Upload.UploadType.choices)
+    template = serializers.PrimaryKeyRelatedField(
+        queryset=UploadTemplate.objects.all(), required=False, allow_null=True
+    )
+
+
+class UploadTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UploadTemplate
+        fields = ["id", "name", "upload_type", "row_start", "columns", "active"]
+
+    def validate(self, attrs):
+        # Same rules as the admin, which run through UploadTemplate.clean()
+        columns = attrs.get("columns", getattr(self.instance, "columns", {}))
+        try:
+            UploadTemplate(columns=columns).clean()
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict) from e
+        return attrs
 
 
 class LoanReaderSerializer(CurrencyMixin, serializers.ModelSerializer):

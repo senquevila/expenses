@@ -7,12 +7,13 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 
 # models import
-from expenses.models import Upload
+from expenses.models import Upload, UploadTemplate
 from expenses.serializers import (
     UploadSerializer,
     UploadStep1InputSerializer,
     UploadStep1Serializer,
     UploadStep2Serializer,
+    UploadTemplateSerializer,
 )
 from expenses.services.dashboard import upload_gaps
 from expenses.services.uploads import process_upload_result
@@ -70,8 +71,9 @@ class UploadViewSet(viewsets.ModelViewSet):
         input_serializer.is_valid(raise_exception=True)
         upload.result = input_serializer.validated_data["result"]
         upload.upload_type = input_serializer.validated_data["upload_type"]
+        upload.template = input_serializer.validated_data.get("template")
         upload.upload_status = Upload.UploadStatus.PROCESSING
-        upload.save(update_fields=["result", "upload_type", "upload_status"])
+        upload.save(update_fields=["result", "upload_type", "template", "upload_status"])
         process_upload_result(upload)
         output_serializer = self.get_serializer(upload)
         return Response(output_serializer.data, status=status.HTTP_200_OK)
@@ -93,3 +95,17 @@ class UploadViewSet(viewsets.ModelViewSet):
         today = timezone.localdate()
         include_current = request.query_params.get("include_current_month") == "true"
         return Response(upload_gaps(today.year, today, include_current), status=status.HTTP_200_OK)
+
+
+class UploadTemplateViewSet(viewsets.ModelViewSet):
+    """Templates, newest first. ?active=true returns only the ones the upload form can apply."""
+
+    queryset = UploadTemplate.objects.all()
+    serializer_class = UploadTemplateSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.query_params.get("active") == "true":
+            qs = qs.filter(active=True)
+        return qs

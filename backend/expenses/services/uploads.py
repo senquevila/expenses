@@ -7,6 +7,9 @@ from expenses.serializers import TransactionSerializer
 from expenses.utils.identifier import make_transaction_identifier
 from expenses.utils.tools import str_to_date
 
+# Codes banks print inside the amount text that are not ISO alpha3
+CURRENCY_ALIASES = {"L": "HNL", "LPS": "HNL", "$": "USD"}
+
 
 def _fail(upload: Upload, error: str):
     upload.fails = [{"error": error}]
@@ -26,11 +29,6 @@ def process_upload_result(upload: Upload):
     upload_type = upload.upload_type
     if not upload_type:
         _fail(upload, "upload_type is not set")
-        return
-
-    detected_type = _detect_type_from_structure(rows[0])
-    if detected_type != upload_type:
-        _fail(upload, f"upload_type '{upload_type}' does not match result structure (detected '{detected_type}')")
         return
 
     defaults = _get_defaults()
@@ -53,10 +51,7 @@ def process_upload_result(upload: Upload):
             fails.append({"row_number": row_number, "description": description, "reason": "Period not found or closed"})
             continue
 
-        if upload_type == Upload.UploadType.CREDIT_CARD:
-            amount, currency, is_income = _parse_credit_card_row(row, defaults["currency"])
-        else:
-            amount, currency, is_income = _parse_savings_account_row(row, defaults["currency"])
+        amount, currency, is_income = _parse_row(row, defaults["currency"])
 
         if not amount:
             fails.append({"row_number": row_number, "description": description, "reason": "Amount is zero or invalid"})
@@ -102,14 +97,6 @@ def process_upload_result(upload: Upload):
     _update_interval_dates(upload, rows)
 
 
-def _detect_type_from_structure(row: dict) -> str | None:
-    if "local" in row and "usd" in row:
-        return Upload.UploadType.CREDIT_CARD
-    if "debit" in row and "credit" in row:
-        return Upload.UploadType.SAVINGS_ACCOUNT
-    return None
-
-
 def _get_defaults() -> dict:
     default_currency = Currency.objects.filter(alpha3=settings.DEFAULT_CURRENCY).first()
     if not default_currency:
@@ -138,6 +125,8 @@ def _parse_amount_field(field: dict, default_currency: Currency) -> tuple[float 
     if cleaned.startswith("-"):
         sign = "-"
         cleaned = cleaned[1:]
+    symbol = re.search(r"[A-Za-z$€£¥₡]+", cleaned)
+    embedded = symbol.group().upper() if symbol else ""
     cleaned = re.sub(r"^[A-Za-z$€£¥₡]+", "", cleaned)
     cleaned = re.sub(r"[A-Za-z$€£¥₡]+$", "", cleaned)
     dot_pos = cleaned.rfind(".")
@@ -156,27 +145,26 @@ def _parse_amount_field(field: dict, default_currency: Currency) -> tuple[float 
         return None, None
     if not amount:
         return None, None
-    currency = Currency.objects.filter(alpha3=field.get("currency", "")).first() or default_currency
+    code = field.get("currency") or CURRENCY_ALIASES.get(embedded, embedded)
+    currency = Currency.objects.filter(alpha3=code).first() or default_currency
     return amount, currency
 
 
-def _parse_credit_card_row(row: dict, default_currency: Currency) -> tuple[float | None, Currency | None, bool]:
-    """Use local amount first, fall back to USD. Negative amount = income."""
-    amount, currency = _parse_amount_field(row.get("local", {}), default_currency)
-    if not amount:
-        amount, currency = _parse_amount_field(row.get("usd", {}), default_currency)
-    is_income = amount is not None and amount < 0
-    return amount, currency, is_income
+def _parse_row(row: dict, default_currency: Currency) -> tuple[float | None, Currency | None, bool]:
+    """First non-empty amount wins. A credit column is income, a debit column an expense.
 
-
-def _parse_savings_account_row(row: dict, default_currency: Currency) -> tuple[float | None, Currency | None, bool]:
-    """Credit = income, debit = expense. Credit takes precedence if both present."""
-    credit_amount, credit_currency = _parse_amount_field(row.get("credit", {}), default_currency)
-    if credit_amount:
-        return credit_amount, credit_currency, True
-    debit_amount, debit_currency = _parse_amount_field(row.get("debit", {}), default_currency)
-    if debit_amount:
-        return debit_amount, debit_currency, False
+    When the row has both debit and credit columns the column decides alone (some banks print debits as negatives).
+    Otherwise a negative amount flips it, e.g. a card payment in a debit column is income.
+    """
+    amounts = row.get("amounts", [])
+    has_both_kinds = len({a.get("kind") for a in amounts}) > 1
+    for field in amounts:
+        amount, currency = _parse_amount_field(field, default_currency)
+        if amount:
+            is_income = field.get("kind") == "credit"
+            if amount < 0 and not has_both_kinds:
+                is_income = not is_income
+            return abs(amount), currency, is_income
     return None, None, False
 
 
