@@ -67,7 +67,7 @@ class TestUploadGaps(TestCase):
         result = upload_gaps(2026, date(2026, 4, 2), include_current_month=True)
 
         # Jan gap kept; Mar gap dropped (closed period); trailing 2-day gap too short
-        gap = {"from": date(2026, 1, 6), "to": date(2026, 2, 1), "days": 26}
+        gap = {"from": date(2026, 1, 6), "to": date(2026, 1, 31), "days": 26}
         self.assertEqual(result, [{"identifier": "card", "gaps": [gap]}])
 
     def test_without_current_month_gaps_are_cut_at_previous_month_end(self):
@@ -87,3 +87,31 @@ class TestUploadGaps(TestCase):
 
         gap = {"from": date(2026, 4, 1), "to": date(2026, 4, 25), "days": 25}
         self.assertEqual(upload_gaps(2026, date(2026, 4, 25), True), [{"identifier": "card", "gaps": [gap]}])
+
+    def test_savings_account_upload_covers_whole_month(self):
+        savings = Upload.UploadType.SAVINGS_ACCOUNT
+        Upload.objects.create(
+            identifier="savings", upload_type=savings, start_date=date(2026, 1, 30), end_date=date(2026, 1, 30)
+        )
+        Upload.objects.create(
+            identifier="savings", upload_type=savings, start_date=date(2026, 2, 27), end_date=date(2026, 2, 27)
+        )
+
+        self.assertEqual(upload_gaps(2026, date(2026, 3, 10)), [])
+
+    def test_savings_upload_of_a_credit_card_identifier_is_not_expanded(self):
+        Upload.objects.create(
+            identifier="card",
+            upload_type=Upload.UploadType.CREDIT_CARD,
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 31),
+        )
+        Upload.objects.create(
+            identifier="card",
+            upload_type=Upload.UploadType.SAVINGS_ACCOUNT,
+            start_date=date(2026, 2, 20),
+            end_date=date(2026, 2, 28),
+        )
+
+        gap = {"from": date(2026, 2, 1), "to": date(2026, 2, 19), "days": 19}
+        self.assertEqual(upload_gaps(2026, date(2026, 3, 10)), [{"identifier": "card", "gaps": [gap]}])

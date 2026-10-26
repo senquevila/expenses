@@ -128,8 +128,16 @@ def upload_gaps(year: int, today: date, include_current_month: bool = False) -> 
         start_date__year__lte=year,
         end_date__year__gte=year,
         start_date__lte=today,
-    ).values_list("identifier", "start_date", "end_date")
-    for identifier, start, end in uploads:
+    ).values_list("identifier", "start_date", "end_date", "upload_type")
+    # Some credit card files get detected as savings: one CREDIT_CARD upload marks the whole identifier.
+    credit_card_ids = set(
+        Upload.objects.filter(upload_type=Upload.UploadType.CREDIT_CARD).values_list("identifier", flat=True)
+    )
+    for identifier, start, end, upload_type in uploads:
+        if upload_type == Upload.UploadType.SAVINGS_ACCOUNT and identifier not in credit_card_ids:
+            # Statement dates come from its transactions (invalid ones get deleted): cover the whole month(s).
+            start = start.replace(day=1)
+            end = end.replace(day=calendar.monthrange(end.year, end.month)[1])
         end = min(end, today)
         if identifier:
             ranges_by_id.setdefault(identifier, []).append((start, end))
@@ -155,7 +163,7 @@ def upload_gaps(year: int, today: date, include_current_month: bool = False) -> 
             gap_start = prev_end + timedelta(days=1)
             days = (next_start - gap_start).days
             if days >= MIN_GAP_DAYS:
-                gaps.append({"from": gap_start, "to": next_start, "days": days})
+                gaps.append({"from": gap_start, "to": next_start - timedelta(days=1), "days": days})
         last_end = merged[-1][1]
         if (today - last_end).days >= MIN_GAP_DAYS:
             gaps.append({"from": last_end + timedelta(days=1), "to": today, "days": (today - last_end).days})
