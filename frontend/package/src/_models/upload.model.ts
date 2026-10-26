@@ -56,3 +56,14 @@ export const Step1UploadSchema = z.object({
 export type Upload = z.infer<typeof UploadSchema>;
 export type Step1Upload = z.infer<typeof Step1UploadSchema>;
 export type CreateUploadRequest = z.infer<typeof CreateUploadRequestSchema>;
+
+export const UploadGapsSchema = z.array(
+  z.object({
+    identifier: z.string(),
+    gaps: z.array(
+      z.object({ from: z.string(), to: z.string(), days: z.number() }),
+    ),
+  }),
+);
+
+export type UploadGaps = z.infer<typeof UploadGapsSchema>;

@@ -9,7 +9,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -25,13 +25,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Account } from "@/_models/account.model";
-import type { Period, PeriodSummaryItem } from "@/_models/period.model";
-import type { Transaction } from "@/_models/transaction.model";
-import type { Upload } from "@/_models/upload.model";
-import { accountService } from "@/_services/account.service";
+import type { Period, PeriodDashboard } from "@/_models/period.model";
+import type { UploadGaps } from "@/_models/upload.model";
 import { periodService } from "@/_services/period.service";
-import { transactionService } from "@/_services/transaction.service";
 import { uploadService } from "@/_services/upload.service";
 import Money from "@/_shared/components/Money";
 
@@ -51,173 +47,32 @@ const MONTH_NAMES = [
 ];
 
 const PIE_COLORS = [
-  "#18181b",
-  "#52525b",
-  "#a1a1aa",
-  "#d4d4d8",
-  "#e4e4e7",
-  "#f4f4f5",
+  "#6366f1", // indigo
+  "#10b981", // emerald
+  "#f59e0b", // amber
+  "#f43f5e", // rose
+  "#0ea5e9", // sky
+  "#8b5cf6", // violet
+  "#14b8a6", // teal
+  "#f97316", // orange
 ];
-
-async function fetchAllTransactions(
-  year: number,
-  month: number,
-): Promise<Transaction[]> {
-  const all: Transaction[] = [];
-  let page = 1;
-  for (;;) {
-    const res = await transactionService.getAll({ year, month, page });
-    all.push(...res.results);
-    if (!res.next) break;
-    page++;
-  }
-  return all;
-}
-
-interface PeriodData {
-  summary: PeriodSummaryItem[];
-  prevSummary: PeriodSummaryItem[];
-  accounts: Account[];
-  transactions: Transaction[];
-}
-
-type UploadGap = { from: string; to: string; days: number };
-type IdentifierGaps = { identifier: string; gaps: UploadGap[] };
-
-function parseLocalDate(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function formatLocalDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function computeMissingGaps(
-  uploads: Upload[],
-  year: number,
-  periods: Period[],
-): IdentifierGaps[] {
-  const now = new Date();
-  const byId = new Map<string, { start: Date; end: Date }[]>();
-  const anonymous: { start: Date; end: Date }[] = [];
-
-  for (const u of uploads) {
-    if (!u.start_date || !u.end_date) continue;
-    const start = parseLocalDate(u.start_date);
-    const end = parseLocalDate(u.end_date);
-    if (end.getFullYear() < year || start.getFullYear() > year) continue;
-    if (u.identifier) {
-      const list = byId.get(u.identifier) ?? [];
-      list.push({ start, end });
-      byId.set(u.identifier, list);
-    } else {
-      anonymous.push({ start, end });
-    }
-  }
-
-  const result: IdentifierGaps[] = [];
-
-  for (const [id, ranges] of byId) {
-    const allRanges = [...ranges, ...anonymous];
-    allRanges.sort((a, b) => a.start.getTime() - b.start.getTime());
-
-    // Merge overlapping ranges
-    const merged: { start: Date; end: Date }[] = [];
-    for (const r of allRanges) {
-      const last = merged.at(-1);
-      if (!last || r.start > last.end) {
-        merged.push({ ...r });
-      } else if (r.end > last.end) {
-        last.end = r.end;
-      }
-    }
-
-    const gaps: UploadGap[] = [];
-
-    // Gaps between consecutive uploads
-    for (let i = 1; i < merged.length; i++) {
-      const gapStart = new Date(merged[i - 1].end);
-      gapStart.setDate(gapStart.getDate() + 1);
-      const days = Math.round(
-        (merged[i].start.getTime() - gapStart.getTime()) / 86400000,
-      );
-      if (days >= 15) {
-        gaps.push({
-          from: formatLocalDate(gapStart),
-          to: formatLocalDate(merged[i].start),
-          days,
-        });
-      }
-    }
-
-    // Gap from last upload to today
-    const lastEnd = merged[merged.length - 1].end;
-    const daysSinceLast = Math.round(
-      (now.getTime() - lastEnd.getTime()) / 86400000,
-    );
-    if (daysSinceLast >= 15) {
-      const gapStart = new Date(lastEnd);
-      gapStart.setDate(gapStart.getDate() + 1);
-      gaps.push({
-        from: formatLocalDate(gapStart),
-        to: formatLocalDate(now),
-        days: daysSinceLast,
-      });
-    }
-
-    const activePeriodGaps = gaps.filter((gap) =>
-      periods.some((p) => {
-        if (!p.active || p.closed) return false;
-        const pStart = new Date(p.year, p.month - 1, 1);
-        const pEnd = new Date(p.year, p.month, 0);
-        return (
-          parseLocalDate(gap.from) <= pEnd && parseLocalDate(gap.to) >= pStart
-        );
-      }),
-    );
-    if (activePeriodGaps.length > 0)
-      result.push({ identifier: id, gaps: activePeriodGaps });
-  }
-
-  return result;
-}
 
 export function Dashboard() {
   const [periods, setPeriods] = useState<Period[]>([]);
   const [idx, setIdx] = useState(-1);
-  const [periodData, setPeriodData] = useState<PeriodData>({
-    summary: [],
-    prevSummary: [],
-    accounts: [],
-    transactions: [],
-  });
-  const [loadedIdx, setLoadedIdx] = useState(-1);
-  const [uploads, setUploads] = useState<Upload[]>([]);
+  const [metrics, setMetrics] = useState<PeriodDashboard | null>(null);
+  const [uploadGaps, setUploadGaps] = useState<UploadGaps>([]);
   const [uploadsRefreshing, setUploadsRefreshing] = useState(true);
 
   const refreshUploads = () => {
     setUploadsRefreshing(true);
     uploadService
-      .getAll()
-      .then(setUploads)
+      .getGaps()
+      .then(setUploadGaps)
       .finally(() => setUploadsRefreshing(false));
   };
 
-  useEffect(() => {
-    uploadService
-      .getAll()
-      .then(setUploads)
-      .finally(() => setUploadsRefreshing(false));
-  }, []);
-
-  const uploadGaps = useMemo(
-    () => computeMissingGaps(uploads, new Date().getFullYear(), periods),
-    [uploads, periods],
-  );
+  useEffect(refreshUploads, []);
 
   useEffect(() => {
     periodService.getAll().then((all) => {
@@ -230,174 +85,20 @@ export function Dashboard() {
     });
   }, []);
 
+  const period = periods[idx];
+
   useEffect(() => {
-    if (periods.length === 0 || idx < 0) return;
-    const capturedIdx = idx;
-    const current = periods[capturedIdx];
-    const prev = periods[capturedIdx + 1] ?? null;
-
+    if (!period) return;
     let cancelled = false;
-    Promise.all([
-      periodService.getSummary(current.id),
-      prev
-        ? periodService.getSummary(prev.id)
-        : Promise.resolve<PeriodSummaryItem[]>([]),
-      accountService.getAll(),
-      fetchAllTransactions(current.year, current.month),
-    ]).then(([summary, prevSummary, accounts, transactions]) => {
-      if (cancelled) return;
-      setPeriodData({ summary, prevSummary, accounts, transactions });
-      setLoadedIdx(capturedIdx);
+    periodService.getDashboard(period.id).then((data) => {
+      if (!cancelled) setMetrics(data);
     });
-
     return () => {
       cancelled = true;
     };
-  }, [periods, idx]);
+  }, [period]);
 
-  const loading = periods.length === 0 || idx < 0 || loadedIdx !== idx;
-
-  const metrics = useMemo(() => {
-    const { summary, prevSummary, accounts, transactions } = periodData;
-    if (summary.length === 0 && accounts.length === 0) return null;
-
-    const accountMap = new Map(accounts.map((a) => [a.id, a]));
-
-    const expenseItems = summary.filter(
-      (item) => (accountMap.get(item.account_id)?.sign ?? 0) < 0,
-    );
-    const incomeItems = summary.filter(
-      (item) => (accountMap.get(item.account_id)?.sign ?? 0) > 0,
-    );
-
-    const totalExpenses = expenseItems.reduce(
-      (s, i) => s + Math.abs(i.total.value),
-      0,
-    );
-    const totalIncome = incomeItems.reduce(
-      (s, i) => s + Math.abs(i.total.value),
-      0,
-    );
-    const netBalance = totalIncome - totalExpenses;
-    const savingsRate = totalIncome > 0 ? (netBalance / totalIncome) * 100 : 0;
-
-    const prevExpenseTotal = prevSummary
-      .filter((item) => (accountMap.get(item.account_id)?.sign ?? 0) < 0)
-      .reduce((s, i) => s + Math.abs(i.total.value), 0);
-    const prevIncomeTotal = prevSummary
-      .filter((item) => (accountMap.get(item.account_id)?.sign ?? 0) > 0)
-      .reduce((s, i) => s + Math.abs(i.total.value), 0);
-
-    const momExpenses =
-      prevExpenseTotal > 0
-        ? ((totalExpenses - prevExpenseTotal) / prevExpenseTotal) * 100
-        : null;
-    const momIncome =
-      prevIncomeTotal > 0
-        ? ((totalIncome - prevIncomeTotal) / prevIncomeTotal) * 100
-        : null;
-
-    const period = periods[idx];
-    const today = new Date();
-    const isCurrentMonth =
-      period &&
-      today.getFullYear() === period.year &&
-      today.getMonth() + 1 === period.month;
-    const daysElapsed = isCurrentMonth
-      ? today.getDate()
-      : period
-        ? new Date(period.year, period.month, 0).getDate()
-        : 30;
-    const dailyAverage = daysElapsed > 0 ? totalExpenses / daysElapsed : 0;
-
-    const topCategories = expenseItems
-      .map((item) => ({
-        name: item.account_name,
-        amount: Math.abs(item.total.value),
-        percentage:
-          totalExpenses > 0
-            ? (Math.abs(item.total.value) / totalExpenses) * 100
-            : 0,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 6);
-
-    const largestTx =
-      transactions
-        .filter((t) => t.account.sign < 0)
-        .sort(
-          (a, b) => Math.abs(b.amount.value) - Math.abs(a.amount.value),
-        )[0] ?? null;
-
-    let recurringTotal = 0;
-    let oneOffTotal = 0;
-    expenseItems.forEach((item) => {
-      const acc = accountMap.get(item.account_id);
-      if (acc?.account_type === "FIX")
-        recurringTotal += Math.abs(item.total.value);
-      else oneOffTotal += Math.abs(item.total.value);
-    });
-
-    const accountDistribution = expenseItems
-      .map((item) => ({
-        name: item.account_name,
-        amount: Math.abs(item.total.value),
-        percentage:
-          totalExpenses > 0
-            ? (Math.abs(item.total.value) / totalExpenses) * 100
-            : 0,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 8);
-
-    const currency = summary[0]?.total.currency ?? "";
-
-    // Daily activity: one entry per day in the month
-    const daysInMonth = period
-      ? new Date(period.year, period.month, 0).getDate()
-      : 30;
-    const dailyMap = new Map<number, { expenses: number; income: number }>();
-    for (let d = 1; d <= daysInMonth; d++)
-      dailyMap.set(d, { expenses: 0, income: 0 });
-    transactions.forEach((t) => {
-      const day = new Date(t.payment_date).getDate();
-      const entry = dailyMap.get(day);
-      if (!entry) return;
-      if (t.account.sign < 0) entry.expenses += Math.abs(t.amount.value);
-      else if (t.account.sign > 0) entry.income += Math.abs(t.amount.value);
-    });
-    const dailyChartData = Array.from(dailyMap.entries()).map(
-      ([day, vals]) => ({
-        day: String(day),
-        expenses: parseFloat(vals.expenses.toFixed(2)),
-        income: parseFloat(vals.income.toFixed(2)),
-      }),
-    );
-
-    return {
-      totalExpenses,
-      totalIncome,
-      netBalance,
-      savingsRate,
-      momExpenses,
-      momIncome,
-      dailyAverage,
-      topCategories,
-      largestTx,
-      recurringTotal,
-      oneOffTotal,
-      accountDistribution,
-      prevExpenseTotal,
-      prevIncomeTotal,
-      dailyChartData,
-      currency,
-    };
-  }, [periodData, periods, idx]);
-
-  const period = periods[idx];
-  const prevPeriod = periods[idx + 1] ?? null;
-
-  if (loading) {
+  if (!period || !metrics || metrics.period.id !== period.id) {
     return (
       <div className="p-8 max-w-7xl mx-auto animate-pulse space-y-6">
         <div className="h-10 w-48 bg-zinc-100 rounded" />
@@ -484,37 +185,35 @@ export function Dashboard() {
             </Dialog.Root>
           )}
         </div>
-        {period && (
-          <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm px-2 py-1.5">
-            <button
-              type="button"
-              onClick={() => setIdx((i) => Math.min(i + 1, periods.length - 1))}
-              disabled={idx >= periods.length - 1}
-              className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <span className="text-sm font-semibold w-40 text-center">
-              {MONTH_NAMES[period.month - 1]} {period.year}
-              {period.active && (
-                <span className="ml-1.5 text-xs font-normal text-green-600">
-                  ● active
-                </span>
-              )}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIdx((i) => Math.max(i - 1, 0))}
-              disabled={idx === 0}
-              className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm px-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setIdx((i) => Math.min(i + 1, periods.length - 1))}
+            disabled={idx >= periods.length - 1}
+            className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <span className="text-sm font-semibold w-40 text-center">
+            {MONTH_NAMES[period.month - 1]} {period.year}
+            {period.active && (
+              <span className="ml-1.5 text-xs font-normal text-green-600">
+                ● active
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => setIdx((i) => Math.max(i - 1, 0))}
+            disabled={idx === 0}
+            className="p-1.5 rounded hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
       </div>
 
-      {!metrics ? (
+      {!metrics.total_expenses && !metrics.total_income ? (
         <p className="text-zinc-500 text-sm">
           No data available for this period.
         </p>
@@ -524,48 +223,46 @@ export function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiCard
               label="Total Expenses"
-              displayValue={-metrics.totalExpenses}
+              displayValue={-metrics.total_expenses}
               currency={metrics.currency}
-              trend={metrics.momExpenses}
+              trend={metrics.mom_expenses}
               invertTrend
             />
             <KpiCard
               label="Total Income"
-              displayValue={metrics.totalIncome}
+              displayValue={metrics.total_income}
               currency={metrics.currency}
-              trend={metrics.momIncome}
+              trend={metrics.mom_income}
             />
             <KpiCard
               label="Net Balance"
-              displayValue={metrics.netBalance}
+              displayValue={metrics.net_balance}
               currency={metrics.currency}
             />
-            <SavingsCard rate={metrics.savingsRate} />
+            <SavingsCard rate={metrics.savings_rate} />
           </div>
 
           {/* Row 2: Charts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <MonthComparisonCard
               current={{
-                expenses: metrics.totalExpenses,
-                income: metrics.totalIncome,
+                expenses: metrics.total_expenses,
+                income: metrics.total_income,
               }}
               prev={{
-                expenses: metrics.prevExpenseTotal,
-                income: metrics.prevIncomeTotal,
+                expenses: metrics.prev_expenses,
+                income: metrics.prev_income,
               }}
-              currentLabel={
-                period ? MONTH_NAMES[period.month - 1].slice(0, 3) : "This"
-              }
+              currentLabel={MONTH_NAMES[period.month - 1].slice(0, 3)}
               prevLabel={
-                prevPeriod
-                  ? MONTH_NAMES[prevPeriod.month - 1].slice(0, 3)
+                metrics.prev_period
+                  ? MONTH_NAMES[metrics.prev_period.month - 1].slice(0, 3)
                   : "Prev"
               }
               currency={metrics.currency}
             />
             <TopCategoriesCard
-              categories={metrics.topCategories}
+              categories={metrics.top_categories}
               currency={metrics.currency}
             />
           </div>
@@ -573,20 +270,23 @@ export function Dashboard() {
           {/* Row 3: Detail cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <DailyAverageCard
-              amount={metrics.dailyAverage}
+              amount={metrics.daily_average}
               currency={metrics.currency}
             />
-            <LargestExpenseCard transaction={metrics.largestTx} />
-            <RecurringVsOneOffCard
-              recurring={metrics.recurringTotal}
-              oneOff={metrics.oneOffTotal}
+            <LargestExpenseCard
+              transaction={metrics.largest_expense}
+              currency={metrics.currency}
             />
-            <AccountDistributionCard accounts={metrics.accountDistribution} />
+            <RecurringVsOneOffCard
+              recurring={metrics.recurring_total}
+              oneOff={metrics.one_off_total}
+            />
+            <AccountDistributionCard accounts={metrics.distribution} />
           </div>
 
           {/* Row 4: Daily activity chart */}
           <DailyActivityChart
-            data={metrics.dailyChartData}
+            data={metrics.daily}
             currency={metrics.currency}
           />
         </div>
@@ -711,17 +411,17 @@ function MonthComparisonCard({
             width={36}
           />
           <Tooltip formatter={(v: unknown) => [fmt(v as number), undefined]} />
-          <Bar dataKey={prevLabel} fill="#d4d4d8" radius={[4, 4, 0, 0]} />
-          <Bar dataKey={currentLabel} fill="#18181b" radius={[4, 4, 0, 0]} />
+          <Bar dataKey={prevLabel} fill="#a5b4fc" radius={[4, 4, 0, 0]} />
+          <Bar dataKey={currentLabel} fill="#6366f1" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
       <div className="flex gap-4 mt-2 text-xs text-zinc-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-2 rounded-sm bg-zinc-300 inline-block" />
+          <span className="w-3 h-2 rounded-sm bg-indigo-300 inline-block" />
           {prevLabel}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-2 rounded-sm bg-zinc-900 inline-block" />
+          <span className="w-3 h-2 rounded-sm bg-indigo-500 inline-block" />
           {currentLabel}
         </span>
       </div>
@@ -751,7 +451,7 @@ function TopCategoriesCard({
         <p className="text-sm text-zinc-400">No expense data.</p>
       ) : (
         <div className="space-y-3">
-          {categories.map((cat) => (
+          {categories.map((cat, i) => (
             <div key={cat.name}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium truncate max-w-[55%]">
@@ -766,8 +466,11 @@ function TopCategoriesCard({
               </div>
               <div className="w-full bg-zinc-100 rounded-full h-1.5">
                 <div
-                  className="bg-zinc-900 h-1.5 rounded-full transition-all"
-                  style={{ width: `${cat.percentage}%` }}
+                  className="h-1.5 rounded-full transition-all"
+                  style={{
+                    width: `${cat.percentage}%`,
+                    background: PIE_COLORS[i % PIE_COLORS.length],
+                  }}
                 />
               </div>
             </div>
@@ -805,8 +508,10 @@ function DailyAverageCard({
 
 function LargestExpenseCard({
   transaction,
+  currency,
 }: {
-  transaction: Transaction | null;
+  transaction: PeriodDashboard["largest_expense"];
+  currency: string;
 }) {
   return (
     <div className="bg-white p-5 rounded-lg shadow-sm">
@@ -819,16 +524,16 @@ function LargestExpenseCard({
         <>
           <Money
             value={{
-              value: -Math.abs(transaction.amount.value),
-              currency: transaction.amount.currency,
+              value: -transaction.amount,
+              currency,
             }}
             className="text-2xl block mb-1"
           />
           <p className="text-sm font-medium text-zinc-700 truncate">
-            {transaction.description ?? transaction.account.name}
+            {transaction.description ?? transaction.account}
           </p>
           <p className="text-xs text-zinc-400 mt-0.5">
-            {transaction.account.name} · {transaction.payment_date}
+            {transaction.account} · {transaction.payment_date}
           </p>
         </>
       )}

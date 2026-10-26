@@ -42,3 +42,47 @@ export type PeriodSummary = z.infer<typeof PeriodSummarySchema>;
 export type CreatePeriodRequest = z.infer<typeof CreatePeriodRequestSchema>;
 
 export type UpdatePeriodRequest = z.infer<typeof UpdatePeriodRequestSchema>;
+
+const PeriodRefSchema = z.object({
+  id: z.number(),
+  year: z.number(),
+  month: z.number(),
+});
+
+const CategorySchema = z.object({
+  name: z.string(),
+  amount: z.number(),
+  percentage: z.number(),
+});
+
+export const PeriodDashboardSchema = z.object({
+  period: PeriodRefSchema,
+  prev_period: PeriodRefSchema.nullable(),
+  currency: z.string(),
+  total_expenses: z.number(),
+  total_income: z.number(),
+  net_balance: z.number(),
+  savings_rate: z.number(),
+  prev_expenses: z.number(),
+  prev_income: z.number(),
+  mom_expenses: z.number().nullable(),
+  mom_income: z.number().nullable(),
+  daily_average: z.number(),
+  top_categories: z.array(CategorySchema),
+  distribution: z.array(CategorySchema),
+  recurring_total: z.number(),
+  one_off_total: z.number(),
+  largest_expense: z
+    .object({
+      amount: z.number(),
+      description: z.string().nullable(),
+      account: z.string(),
+      payment_date: z.string(),
+    })
+    .nullable(),
+  daily: z.array(
+    z.object({ day: z.string(), expenses: z.number(), income: z.number() }),
+  ),
+});
+
+export type PeriodDashboard = z.infer<typeof PeriodDashboardSchema>;

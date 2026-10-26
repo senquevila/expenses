@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db.models import DecimalField, Sum
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from expenses.models import Period, Transaction
 from expenses.serializers import (
     PeriodSerializer,
 )
+from expenses.services.dashboard import period_dashboard
 from expenses.services.periods import calculate_period_total
 
 
@@ -58,6 +60,13 @@ class PeriodViewSet(viewsets.ModelViewSet):
             }
             for row in rows
         ]
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="dashboard")
+    def dashboard(self, request, pk=None):
+        """All dashboard metrics for the period. URL: GET /periods/{id}/dashboard/"""
+        data = period_dashboard(self.get_object(), timezone.localdate())
+        data["currency"] = settings.DEFAULT_CURRENCY
         return Response(data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="toggle")

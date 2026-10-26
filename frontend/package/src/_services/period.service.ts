@@ -2,6 +2,8 @@ import apiClient from "@/_libs/api/client";
 import {
   type CreatePeriodRequest,
   type Period,
+  type PeriodDashboard,
+  PeriodDashboardSchema,
   PeriodSchema,
   type PeriodSummary,
   PeriodSummarySchema,
@@ -56,6 +58,11 @@ export const periodService = {
 
   async delete(id: number): Promise<void> {
     await apiClient.delete(`periods/${id}/`);
+  },
+
+  async getDashboard(id: number): Promise<PeriodDashboard> {
+    const response = await apiClient.get(`periods/${id}/dashboard/`);
+    return PeriodDashboardSchema.parse(response.data);
   },
 
   async getSummary(id: number): Promise<PeriodSummary> {

@@ -4,6 +4,8 @@ import {
   type Step1Upload,
   Step1UploadSchema,
   type Upload,
+  type UploadGaps,
+  UploadGapsSchema,
   UploadSchema,
 } from "@/_models/upload.model";
 
@@ -49,6 +51,11 @@ export const uploadService = {
   async getById(id: number): Promise<Upload> {
     const response = await apiClient.get(`uploads/${id}/`);
     return UploadSchema.parse(response.data);
+  },
+
+  async getGaps(): Promise<UploadGaps> {
+    const response = await apiClient.get("uploads/gaps/");
+    return UploadGapsSchema.parse(response.data);
   },
 
   async getIdentifiers(): Promise<string[]> {

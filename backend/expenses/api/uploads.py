@@ -1,5 +1,6 @@
 # django imports
 from django.db.models import Count
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -13,6 +14,7 @@ from expenses.serializers import (
     UploadStep1Serializer,
     UploadStep2Serializer,
 )
+from expenses.services.dashboard import upload_gaps
 from expenses.services.uploads import process_upload_result
 
 
@@ -81,3 +83,9 @@ class UploadViewSet(viewsets.ModelViewSet):
         """
         identifiers = Upload.objects.filter(identifier__isnull=False).values_list("identifier", flat=True).distinct()
         return Response(data={"identifiers": list(identifiers)}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["get"], url_path="gaps")
+    def gaps(self, request, *args, **kwargs):
+        """Missing upload ranges per identifier for the current year. URL: GET /uploads/gaps/"""
+        today = timezone.localdate()
+        return Response(upload_gaps(today.year, today), status=status.HTTP_200_OK)
